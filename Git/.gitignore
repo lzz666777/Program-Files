@@ -1,0 +1,77 @@
+# ============================================================
+# 2027 数据要素大赛 · Git 数据工作区
+# 这个 .gitignore 只作用于 Git/ 目录
+# 原则：原始数据、隐私、密钥、大文件、临时文件不进仓库
+# ============================================================
+
+# ---------- 密钥 / 账号 ----------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.*
+credentials.*
+config.local.*
+auth.json
+
+# ---------- 原始 / 私密数据 ----------
+data/raw/
+data/private/
+data/personal/
+raw/
+private/
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
+
+# ---------- 大文件 / 模型权重 ----------
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.pt
+*.pth
+*.onnx
+*.h5
+*.ckpt
+*.pkl
+*.joblib
+
+# ---------- 临时 / 输出 ----------
+tmp/
+temp/
+output/
+logs/
+*.log
+*.tmp
+*.bak
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- 编辑器 / 系统 ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Office 临时文件 ----------
+~$*
+
+# ---------- 文档（按需放开） ----------
+# 这个工作区只放数据/代码；报告类 docx 不放这里。
+# 如果确实要提交 Word，删掉下面两行。
+*.docx
+*.doc
