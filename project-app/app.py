@@ -21,6 +21,99 @@ st.set_page_config(
 )
 
 DATA_PATH = Path(__file__).parent / "data" / "stations.csv"
+
+GLASS_CSS = """
+<style>
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.92);
+  --ink: #122a26;
+}
+html, body, .stApp { background: #dce8e4; }
+[data-testid="stToolbar"], [data-testid="stDecoration"], footer { display: none !important; }
+header[data-testid="stHeader"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+[data-testid="stMainBlockContainer"] {
+  max-width: 680px;
+  margin: 18px 22px 18px auto;
+  padding: 20px 22px 64px;
+  min-height: calc(100vh - 36px);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative;
+  z-index: 3;
+}
+[data-testid="stMainBlockContainer"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, rgba(255,255,255,0.90), rgba(255,255,255,0.78));
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.92);
+  border-radius: 30px;
+  box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22);
+}
+.st-key-map_bg {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: -2 !important;
+}
+.st-key-map_bg > div { height: 100vh !important; padding: 0 !important; }
+.st-key-map_bg iframe, .st-key-map_bg canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+section[data-testid="stSidebar"] {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.82);
+}
+section[data-testid="stSidebar"] > div { background: transparent !important; }
+[data-testid="stMetric"] {
+  background: rgba(255, 255, 255, 0.74) !important;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.88) !important;
+  border-radius: 20px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08);
+}
+[data-testid="stVerticalBlockBorderWrapper"] {
+  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.80) !important;
+  border-radius: 22px !important;
+}
+div[data-testid="stDataFrame"] {
+  background: transparent !important;
+  border-radius: 16px;
+  overflow: hidden;
+}
+h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 { color: var(--ink) !important; }
+@media (max-width: 900px) {
+  [data-testid="stMainBlockContainer"] {
+    max-width: calc(100vw - 24px);
+    margin: 12px;
+    padding: 16px 16px 48px;
+    border-radius: 24px;
+  }
+}
+</style>
+"""
 REQUIRED = {
     "station_id",
     "station_name",
@@ -121,42 +214,40 @@ def page_price_map() -> None:
     st.title("价格地图")
     st.caption("先看哪里贵、哪里平台价与实付价不一致；点开站点账单看证据。")
 
-    view = sidebar_filters(df)
+    view = st.session_state.get("view", df)
     if view.empty:
         st.warning("当前筛选没有站点，放宽条件再试。")
         return
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
+    st.caption("全屏地图在背景，可拖动/缩放；左侧筛选会同时更新地图和下方清单。")
+
+    row1 = st.columns(2)
+    with row1[0]:
         st.metric("站点数", len(view), border=True)
-    with c2:
+    with row1[1]:
         st.metric("平均价格偏差", f"{view['price_deviation'].mean():.1f}%", border=True)
-    with c3:
+    row2 = st.columns(2)
+    with row2[0]:
         st.metric("平均全成本", f"¥{view['full_cost_60'].mean():.0f}", border=True)
-    with c4:
+    with row2[1]:
         st.metric("平均假空闲率", f"{view['fake_idle'].mean():.1%}", border=True)
 
-    left, right = st.columns([2, 1])
-    with left:
-        with st.container(border=True):
-            st.subheader("价格偏差地图")
-            st.caption("红：≥20%；黄：10%—20%；绿：<10%。底图需要联网；无网时显示站点气泡。")
-            st.pydeck_chart(make_map(view), height=470, alt="站点价格偏差地图")
-    with right:
-        with st.container(border=True):
-            st.subheader("差价最大的站点")
-            top = (
-                view.nlargest(8, "price_deviation")[["station_name", "price_deviation"]]
-                .set_index("station_name")
-            )
-            st.bar_chart(top, horizontal=True, alt="价格偏差最大的站点")
-        with st.container(border=True):
-            st.subheader("怎么读")
-            st.markdown(
-                "- 平台价是平台展示价；实付价是现场账单。\n"
-                "- 偏差 >0 表示现场更贵。\n"
-                "- 核验时间与证据等级见站点账单。"
-            )
+    with st.container(border=True):
+        st.subheader("差价最大的站点")
+        top = (
+            view.nlargest(8, "price_deviation")[["station_name", "price_deviation"]]
+            .set_index("station_name")
+        )
+        st.bar_chart(top, horizontal=True, alt="价格偏差最大的站点")
+
+    with st.container(border=True):
+        st.subheader("怎么读")
+        st.markdown(
+            "- 平台价是平台展示价；实付价是现场账单。\n"
+            "- 偏差 >0 表示现场更贵。\n"
+            "- 核验时间与证据等级见站点账单。\n"
+            "- 地图气泡：红 ≥20%，黄 10%—20%，绿 <10%。"
+        )
 
     with st.container(border=True):
         st.subheader("站点价格清单")
@@ -209,48 +300,47 @@ def page_station_bill() -> None:
         st.badge(f"证据等级：{row['evidence']}", color="green" if row["evidence"] == "A" else "orange")
         st.badge("核验：2026-11-18", color="gray")
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
+    row1 = st.columns(2)
+    with row1[0]:
         st.metric("平台价", f"¥{row['platform_price']:.2f}/度", border=True)
-    with c2:
+    with row1[1]:
         st.metric("实地实付", f"¥{row['field_price']:.2f}/度", border=True)
-    with c3:
+    row2 = st.columns(2)
+    with row2[0]:
         st.metric("价格偏差", f"{row['price_deviation']:+.1f}%", border=True)
-    with c4:
-        st.metric("全成本（60度+停车）", f"¥{row['full_cost_60']:.0f}", border=True)
+    with row2[1]:
+        st.metric("全成本", f"¥{row['full_cost_60']:.0f}", border=True)
 
-    left, right = st.columns([3, 2])
-    with left:
-        with st.container(border=True):
-            st.subheader("一次充电的钱花在哪")
-            bill = pd.DataFrame(
-                {
-                    "项目": ["电费", "服务费", "停车费"],
-                    "金额": [
-                        row["price_elec"] * 60,
-                        row["price_service"] * 60,
-                        row["price_parking"],
-                    ],
-                }
-            )
-            st.bar_chart(bill, x="项目", y="金额", alt="电费、服务费、停车费构成")
-            st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
-    with right:
-        with st.container(border=True):
-            st.subheader("价格核对")
-            check = pd.DataFrame(
-                {
-                    "项目": ["电费（元/度）", "服务费（元/度）", "停车费（元/小时）"],
-                    "平台展示": [row["price_elec"], row["price_service"], row["price_parking"]],
-                    "现场实付": [
-                        row["price_elec"] * row["field_price"] / row["platform_price"],
-                        row["price_service"] * row["field_price"] / row["platform_price"],
-                        row["price_parking"],
-                    ],
-                }
-            )
-            st.dataframe(check, hide_index=True, alt="平台展示与现场实付价格核对")
-            st.caption("示例：按总价差等比拆分电费/服务费；真实项目以账单分项为准。")
+    with st.container(border=True):
+        st.subheader("一次充电的钱花在哪")
+        bill = pd.DataFrame(
+            {
+                "项目": ["电费", "服务费", "停车费"],
+                "金额": [
+                    row["price_elec"] * 60,
+                    row["price_service"] * 60,
+                    row["price_parking"],
+                ],
+            }
+        )
+        st.bar_chart(bill, x="项目", y="金额", alt="电费、服务费、停车费构成")
+        st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
+
+    with st.container(border=True):
+        st.subheader("价格核对")
+        check = pd.DataFrame(
+            {
+                "项目": ["电费（元/度）", "服务费（元/度）", "停车费（元/小时）"],
+                "平台展示": [row["price_elec"], row["price_service"], row["price_parking"]],
+                "现场实付": [
+                    row["price_elec"] * row["field_price"] / row["platform_price"],
+                    row["price_service"] * row["field_price"] / row["platform_price"],
+                    row["price_parking"],
+                ],
+            }
+        )
+        st.dataframe(check, hide_index=True, alt="平台展示与现场实付价格核对")
+        st.caption("示例：按总价差等比拆分电费/服务费；真实项目以账单分项为准。")
 
     st.info(
         f"平台标价 ¥{row['platform_price']:.2f}/度，现场实付 ¥{row['field_price']:.2f}/度，"
@@ -301,14 +391,15 @@ def page_sandbox() -> None:
     events = max(0.0, (base_fake - new_fake) * total_piles * 8)
     revenue = min(cap, fee * 6) * events
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
+    row1 = st.columns(2)
+    with row1[0]:
         st.metric("平均等待（现状）", f"{base_wait:.1f} 分钟", border=True)
-    with c2:
+    with row1[1]:
         st.metric("平均等待（方案）", f"{new_wait:.1f} 分钟", f"{new_wait - base_wait:+.1f}", border=True)
-    with c3:
+    row2 = st.columns(2)
+    with row2[0]:
         st.metric("假空闲率", f"{new_fake:.1%}", f"{(new_fake - base_fake) * 100:+.1f}pp", border=True)
-    with c4:
+    with row2[1]:
         st.metric("有效桩数", f"{new_eff:.0f}", border=True)
 
     left, right = st.columns(2)
@@ -400,6 +491,8 @@ def page_feedback() -> None:
 
 
 def main() -> None:
+    st.html(GLASS_CSS)
+
     st.sidebar.markdown("### 数据")
     uploaded = st.sidebar.file_uploader(
         "上传站点 CSV",
@@ -422,7 +515,22 @@ def main() -> None:
         candidate = load_data(DATA_PATH)
 
     st.session_state["df"] = candidate
-    st.sidebar.caption(f"当前：{len(candidate)} 个站点 · 示例数据" if uploaded is None else f"当前：{len(candidate)} 个站点 · 已上传")
+    view = sidebar_filters(candidate)
+    st.session_state["view"] = view
+
+    map_data = view if not view.empty else candidate
+    with st.container(key="map_bg"):
+        st.pydeck_chart(
+            make_map(map_data),
+            height=1000,
+            alt="全屏站点价格偏差地图",
+        )
+
+    st.sidebar.caption(
+        f"当前：{len(candidate)} 个站点 · 示例数据"
+        if uploaded is None
+        else f"当前：{len(candidate)} 个站点 · 已上传"
+    )
     st.sidebar.markdown("---")
 
     pages = [
