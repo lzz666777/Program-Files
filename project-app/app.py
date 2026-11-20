@@ -51,12 +51,12 @@ header[data-testid="stHeader"] {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(135deg, rgba(255,255,255,0.90), rgba(255,255,255,0.78));
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.92);
+  background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.44));
+  backdrop-filter: blur(46px) saturate(190%);
+  -webkit-backdrop-filter: blur(46px) saturate(190%);
+  border: 1px solid rgba(255,255,255,0.78);
   border-radius: 30px;
-  box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22);
+  box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22), inset 0 1px 0 rgba(255,255,255,0.65);
 }
 .st-key-map_bg {
   position: fixed !important;
@@ -73,29 +73,54 @@ header[data-testid="stHeader"] {
   height: 100vh !important;
 }
 section[data-testid="stSidebar"] {
-  background: rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
-  border-right: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 0 26px 26px 0;
-  box-shadow: 18px 0 60px rgba(12, 40, 34, 0.12);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 section[data-testid="stSidebar"] > div { background: transparent !important; }
+section[data-testid="stSidebar"] > div:first-child {
+  margin: 12px 8px 12px 12px;
+  height: calc(100vh - 24px);
+  padding: 10px 10px 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.66), rgba(255,255,255,0.46));
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  border: 1px solid rgba(255,255,255,0.72);
+  border-radius: 26px;
+  box-shadow: 18px 0 60px rgba(12, 40, 34, 0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+  overflow-y: auto;
+}
 [data-testid="stMetric"] {
-  background: rgba(255, 255, 255, 0.74) !important;
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
   border-radius: 20px !important;
   padding: 14px 16px !important;
-  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08);
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background: rgba(255, 255, 255, 0.62) !important;
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.80) !important;
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
   border-radius: 22px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+[data-testid="stForm"] {
+  background: rgba(255, 255, 255, 0.46) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  border-radius: 22px !important;
+  padding: 14px !important;
+}
+[data-testid="stAlert"] {
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.70) !important;
+  border-radius: 18px !important;
 }
 div[data-testid="stDataFrame"] {
   background: transparent !important;
