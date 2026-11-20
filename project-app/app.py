@@ -77,6 +77,8 @@ section[data-testid="stSidebar"] {
   backdrop-filter: blur(36px) saturate(180%);
   -webkit-backdrop-filter: blur(36px) saturate(180%);
   border-right: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 0 26px 26px 0;
+  box-shadow: 18px 0 60px rgba(12, 40, 34, 0.12);
 }
 section[data-testid="stSidebar"] > div { background: transparent !important; }
 [data-testid="stMetric"] {
