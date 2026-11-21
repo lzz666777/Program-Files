@@ -227,8 +227,51 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   border: 1px solid rgba(255,255,255,0.8);
   border-radius: 18px;
   padding: 12px 14px;
+  margin: 10px 0;
   box-shadow: 0 12px 30px rgba(15,40,35,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
   transition: transform .2s ease, box-shadow .2s ease;
+}
+#bill-content .bill-grid .bill-card { margin: 0; }
+#bill-content .bill-cost { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+#bill-content .pie3d {
+  width: 170px;
+  height: 118px;
+  perspective: 620px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#bill-content .pie {
+  width: 138px;
+  height: 138px;
+  border-radius: 50%;
+  transform: rotateX(58deg) rotateZ(-18deg);
+  box-shadow: 0 20px 24px rgba(15,40,35,0.2), inset 0 0 0 1px rgba(255,255,255,0.55);
+}
+#bill-content .bill-legend { font-size: 13px; line-height: 1.9; }
+#bill-content .bill-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+#bill-content .bill-fb-item {
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(31,78,121,0.12);
+}
+#bill-content .bill-fb-item:last-child { border-bottom: 0; }
+#bill-content .bill-more-btn {
+  margin-top: 6px;
+  border: 0;
+  background: rgba(31,78,121,0.08);
+  color: #1f4e79;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
 }
 #bill-content .bill-card:hover {
   transform: translateY(-4px);
@@ -440,6 +483,12 @@ def make_map(data: pd.DataFrame) -> str:
                 "elec": float(row["price_elec"]),
                 "service": float(row["price_service"]),
                 "parking": float(row["price_parking"]),
+                "feedback_items": [
+                    f"价格不符：平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}",
+                    f"占位：晚高峰排队约 {int(row['queue'])} 分钟",
+                    "坏桩：现场部分充电枪无法启动",
+                    "环境/服务：现场无人值守",
+                ],
             }
         )
     center_lat = sum(s["lat"] for s in stations) / len(stations)
@@ -575,7 +624,15 @@ function showBillInline(s) {{
         }}
       }}
       content.addEventListener('click', (e) => {{
-        if (e.target.closest('[data-close]')) closeBillContent(doc);
+        if (e.target.closest('[data-close]')) {{
+          closeBillContent(doc);
+        }} else if (e.target.closest('[data-more]')) {{
+          const more = content.querySelector('.bill-more');
+          if (more) {{
+            more.hidden = !more.hidden;
+            e.target.textContent = more.hidden ? '显示更多' : '收起';
+          }}
+        }}
       }});
     }}
     content.dataset.page = p.location.pathname;
@@ -591,6 +648,19 @@ function showBillInline(s) {{
 
     const card = (label, value) =>
       '<div class="bill-card"><span>' + label + '</span><b>' + value + '</b></div>';
+    const elec = s.elec * 60;
+    const service = s.service * 60;
+    const parking = s.parking;
+    const total = Math.max(1, elec + service + parking);
+    const p1 = (elec / total) * 100;
+    const p2 = ((elec + service) / total) * 100;
+    const pieBg = 'conic-gradient(#2f6fb0 0 ' + p1.toFixed(1) + '%, #48a37b ' +
+      p1.toFixed(1) + '% ' + p2.toFixed(1) + '%, #e0a33a ' + p2.toFixed(1) + '% 100%)';
+    const feedback = s.feedback_items || [];
+    const firstFb = feedback.slice(0, 2).map((t) => '<div class="bill-fb-item">' + t + '</div>').join('');
+    const restFb = feedback.slice(2).map((t) => '<div class="bill-fb-item">' + t + '</div>').join('');
+    const moreBtn = restFb ? '<button class="bill-more-btn" data-more>显示更多</button>' : '';
+
     content.innerHTML =
       '<div class="bill-head"><h2>站点账单</h2><button class="bill-close" data-close>关闭</button></div>' +
       '<div class="bill-name">' + s.name + '</div>' +
@@ -605,11 +675,20 @@ function showBillInline(s) {{
         card('价格偏差', (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%') +
         card('全成本', '¥' + s.full_cost.toFixed(0)) +
       '</div>' +
-      '<div class="bill-card"><span>一次充电的钱花在哪</span><div class="bill-row">' +
-        '电费 ¥' + (s.elec * 60).toFixed(0) + ' · 服务费 ¥' + (s.service * 60).toFixed(0) +
-        ' · 停车费 ¥' + s.parking.toFixed(0) +
-      '</div></div>' +
-      '<div class="bill-card"><span>最近反馈</span><div class="bill-row">' + s.feedback + ' 条；带账单/照片的证据优先核验。</div></div>';
+      '<div class="bill-card"><span>一次充电的钱花在哪</span>' +
+        '<div class="bill-cost">' +
+          '<div class="pie3d"><div class="pie" style="background:' + pieBg + '"></div></div>' +
+          '<div class="bill-legend">' +
+            '<div><i style="background:#2f6fb0"></i>电费 ¥' + elec.toFixed(0) + '</div>' +
+            '<div><i style="background:#48a37b"></i>服务费 ¥' + service.toFixed(0) + '</div>' +
+            '<div><i style="background:#e0a33a"></i>停车费 ¥' + parking.toFixed(0) + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bill-card"><span>最近反馈</span>' +
+        '<div class="bill-fb">' + firstFb + '<div class="bill-more" hidden>' + restFb + '</div></div>' +
+        moreBtn +
+      '</div>';
   }} catch (e) {{}}
 }}
 
