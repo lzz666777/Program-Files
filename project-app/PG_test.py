@@ -156,34 +156,40 @@ section[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar {
   display: none;
 }
 [data-testid="stMetric"] {
-  background: rgba(255, 255, 255, 0.58) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.78) !important;
-  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-radius: 18px !important;
   padding: 14px 16px !important;
-  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.10), inset 0 1px 0 rgba(255,255,255,0.7);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 [data-testid="stMetric"]:hover {
   transform: translateY(-4px);
-  box-shadow: 0 22px 46px rgba(15, 40, 35, 0.16), inset 0 1px 0 rgba(255,255,255,0.75);
+  box-shadow: 0 22px 46px rgba(15, 40, 35, 0.16), inset 0 1px 0 rgba(255,255,255,0.85);
 }
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background: rgba(255, 255, 255, 0.48) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
-  border-radius: 22px !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 42px rgba(15, 40, 35, 0.14), inset 0 1px 0 rgba(255,255,255,0.85);
 }
 [data-testid="stForm"] {
-  background: rgba(255, 255, 255, 0.46) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
-  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  border-radius: 18px !important;
   padding: 14px !important;
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.10), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 [data-testid="stAlert"] {
   background: rgba(255, 255, 255, 0.48) !important;
