@@ -8,11 +8,13 @@
 
 from __future__ import annotations
 
+import json
+import math
 from pathlib import Path
 
 import pandas as pd
-import pydeck as pdk
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="桩尽其用 · 价格与车位治理",
@@ -180,6 +182,43 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _out_of_china(lng: float, lat: float) -> bool:
+    return not (72.004 <= lng <= 137.8347 and 0.8293 <= lat <= 55.8271)
+
+
+def _transform_lat(x: float, y: float) -> float:
+    ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
+    ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
+    ret += (160.0 * math.sin(y / 12.0 * math.pi) + 320 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+    return ret
+
+
+def _transform_lng(x: float, y: float) -> float:
+    ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+    ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(x * math.pi) + 40.0 * math.sin(x / 3.0 * math.pi)) * 2.0 / 3.0
+    ret += (150.0 * math.sin(x / 12.0 * math.pi) + 300.0 * math.sin(x / 30.0 * math.pi)) * 2.0 / 3.0
+    return ret
+
+
+def wgs84_to_gcj02(lng: float, lat: float) -> tuple[float, float]:
+    """高德/腾讯底图使用 GCJ-02；站点坐标是 WGS84，先转换再画。"""
+    if _out_of_china(lng, lat):
+        return lng, lat
+    a = 6378245.0
+    ee = 0.00669342162296594323
+    dlat = _transform_lat(lng - 105.0, lat - 35.0)
+    dlng = _transform_lng(lng - 105.0, lat - 35.0)
+    rad_lat = lat / 180.0 * math.pi
+    magic = math.sin(rad_lat)
+    magic = 1 - ee * magic * magic
+    sqrt_magic = math.sqrt(magic)
+    dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrt_magic) * math.pi)
+    dlng = (dlng * 180.0) / (a / sqrt_magic * math.cos(rad_lat) * math.pi)
+    return lng + dlng, lat + dlat
+
+
 def price_color(value: float) -> list[int]:
     if value >= 20:
         return [200, 45, 60, 210]
@@ -188,33 +227,82 @@ def price_color(value: float) -> list[int]:
     return [35, 145, 95, 210]
 
 
-def make_map(data: pd.DataFrame) -> pdk.Deck:
-    map_df = data.copy()
-    map_df["color"] = map_df["price_deviation"].apply(price_color)
-    map_df["radius"] = (map_df["piles"] * 12).clip(lower=90)
-    layer = pdk.Layer(
-        "ScatterplotLayer",
-        data=map_df,
-        get_position="[lng, lat]",
-        get_fill_color="color",
-        get_radius="radius",
-        pickable=True,
-        auto_highlight=True,
-    )
-    return pdk.Deck(
-        layers=[layer],
-        initial_view_state=pdk.ViewState(
-            latitude=float(map_df["lat"].mean()),
-            longitude=float(map_df["lng"].mean()),
-            zoom=10.3,
-            pitch=0,
-        ),
-        map_style="light",
-        tooltip={
-            "text": "{station_name}\n电网：{grid_company}\n"
-            "平台价：{platform_price} 元/度\n实付价：{field_price} 元/度"
-        },
-    )
+def make_map(data: pd.DataFrame) -> str:
+    coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
+    stations = []
+    for i, row in data.reset_index(drop=True).iterrows():
+        lng, lat = coords[i]
+        stations.append(
+            {
+                "name": row["station_name"],
+                "district": row["district"],
+                "grid": row["grid_company"],
+                "operator": row["operator"],
+                "lat": lat,
+                "lng": lng,
+                "piles": int(row["piles"]),
+                "deviation": float(row["price_deviation"]),
+                "platform": float(row["platform_price"]),
+                "field": float(row["field_price"]),
+            }
+        )
+    center_lat = sum(s["lat"] for s in stations) / len(stations)
+    center_lng = sum(s["lng"] for s in stations) / len(stations)
+    payload = json.dumps(stations, ensure_ascii=False)
+
+    doc = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  html, body, #map {{ height: 100%; margin: 0; background: #e7efe9; }}
+  .leaflet-container {{ background: #e7efe9; font-family: "Microsoft YaHei", sans-serif; }}
+  .leaflet-control-attribution {{ display: none; }}
+  .leaflet-popup-content {{ font-family: "Microsoft YaHei", sans-serif; font-size: 13px; line-height: 1.6; }}
+  .leaflet-popup-content b {{ color: #12302b; }}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const stations = {payload};
+const map = L.map('map', {{ zoomControl: true, attributionControl: false }}).setView([{center_lat}, {center_lng}], 11);
+L.tileLayer(
+  'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={{x}}&y={{y}}&z={{z}}',
+  {{ minZoom: 3, maxZoom: 18 }}
+).addTo(map);
+
+function pinColor(v) {{
+  if (v >= 20) return '#c82d3c';
+  if (v >= 10) return '#f0a528';
+  return '#23915f';
+}}
+
+stations.forEach(s => {{
+  const marker = L.circleMarker([s.lat, s.lng], {{
+    radius: 7 + Math.min(8, s.piles / 8),
+    color: '#ffffff',
+    weight: 1.2,
+    fillColor: pinColor(s.deviation),
+    fillOpacity: 0.95
+  }}).addTo(map);
+  marker.bindPopup(
+    '<b>' + s.name + '</b><br/>' +
+    s.district + ' · ' + s.operator + '<br/>' +
+    '电网：' + s.grid + '<br/>' +
+    '平台价：¥' + s.platform.toFixed(2) + '/度<br/>' +
+    '实付价：¥' + s.field.toFixed(2) + '/度<br/>' +
+    '价格偏差：' + (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%'
+  );
+}});
+setTimeout(() => map.invalidateSize(), 250);
+</script>
+</body>
+</html>"""
+    return doc
 
 
 def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
@@ -547,11 +635,7 @@ def main() -> None:
 
     map_data = view if not view.empty else candidate
     with st.container(key="map_bg"):
-        st.pydeck_chart(
-            make_map(map_data),
-            height=1000,
-            alt="全屏站点价格偏差地图",
-        )
+        components.html(make_map(map_data), height=1000, scrolling=False)
 
     st.sidebar.caption(
         f"当前：{len(candidate)} 个站点 · 示例数据"
