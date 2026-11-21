@@ -547,29 +547,30 @@ L.DomUtil.create('div', 'map-veil', map.getContainer());
 
 function ensurePanelControls() {{
   try {{
-    const doc = window.parent.document;
-    if (!doc || doc.getElementById('panel-controls')) return;
-    const wrap = doc.createElement('div');
-    wrap.id = 'panel-controls';
-    wrap.innerHTML = '<button type="button" data-side="left">左栏</button><button type="button" data-side="right">右栏</button>';
-    doc.body.appendChild(wrap);
-    function paint() {{
-      wrap.querySelectorAll('button').forEach(b => {{
+    const p = window.parent;
+    const doc = p.document;
+    p.__dshTogglePanel = function(side) {{
+      doc.body.classList.add('panels-collapsed');
+      if (side === 'left') {{
+        doc.body.classList.toggle('show-left');
+      }} else {{
+        doc.body.classList.toggle('show-right');
+      }}
+      doc.querySelectorAll('#panel-controls button').forEach((b) => {{
         b.classList.toggle('active',
           b.dataset.side === 'left' ? doc.body.classList.contains('show-left')
                                     : doc.body.classList.contains('show-right'));
       }});
+    }};
+    let wrap = doc.getElementById('panel-controls');
+    if (!wrap) {{
+      wrap = doc.createElement('div');
+      wrap.id = 'panel-controls';
+      wrap.innerHTML = '<button type="button" data-side="left">左栏</button><button type="button" data-side="right">右栏</button>';
+      doc.body.appendChild(wrap);
     }}
-    wrap.querySelectorAll('button').forEach(btn => {{
-      btn.addEventListener('click', () => {{
-        doc.body.classList.add('panels-collapsed');
-        if (btn.dataset.side === 'left') {{
-          doc.body.classList.toggle('show-left');
-        }} else {{
-          doc.body.classList.toggle('show-right');
-        }}
-        paint();
-      }});
+    wrap.querySelectorAll('button').forEach((btn) => {{
+      btn.setAttribute('onclick', "window.__dshTogglePanel('" + btn.dataset.side + "')");
     }});
   }} catch (e) {{}}
 }}
