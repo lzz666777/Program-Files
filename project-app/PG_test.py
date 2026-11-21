@@ -310,6 +310,65 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 }
 #bill-content .bill-tag.grid { background: rgba(31,78,121,0.12); color: #1f4e79; }
 #bill-content .bill-tag.evidence { background: rgba(35,145,95,0.14); color: #1a6b3c; }
+.rank-chart { padding: 4px 2px 2px; }
+.rank-row {
+  display: grid;
+  grid-template-columns: 22px 132px minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  animation: rankIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+.rank-no {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b6b66;
+  background: rgba(31,78,121,0.08);
+}
+.rank-row:nth-child(1) .rank-no { background: #1f4e79; color: #fff; }
+.rank-row:nth-child(2) .rank-no { background: #3d6f9c; color: #fff; }
+.rank-row:nth-child(3) .rank-no { background: #6b93b5; color: #fff; }
+.rank-name {
+  font-size: 12px;
+  color: #34443f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-track {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(31,78,121,0.08);
+  overflow: hidden;
+}
+.rank-bar {
+  height: 100%;
+  border-radius: 999px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: rankGrow .85s cubic-bezier(.22,1,.36,1) forwards;
+  box-shadow: 0 2px 8px rgba(15,40,35,0.12);
+}
+.rank-val {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f4e79;
+}
+@keyframes rankGrow { to { transform: scaleX(1); } }
+@keyframes rankIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 900px) {
+  .rank-row { grid-template-columns: 20px 100px minmax(0, 1fr) 50px; gap: 7px; }
+}
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -797,11 +856,30 @@ def page_price_map() -> None:
 
     with st.container(border=True):
         st.subheader("差价最大的站点")
-        top = (
-            view.nlargest(8, "price_deviation")[["station_name", "price_deviation"]]
-            .set_index("station_name")
-        )
-        st.bar_chart(top, horizontal=True, alt="价格偏差最大的站点")
+        top = view.nlargest(8, "price_deviation")[
+            ["station_name", "price_deviation"]
+        ].reset_index(drop=True)
+        max_dev = max(float(top["price_deviation"].max()), 1.0)
+        rows = []
+        for idx, row in top.iterrows():
+            dev = float(row["price_deviation"])
+            width = max(4.0, dev / max_dev * 100)
+            if dev >= 40:
+                grad = "linear-gradient(90deg,#c0392b,#ef7d57)"
+            elif dev >= 30:
+                grad = "linear-gradient(90deg,#d97706,#f2b35e)"
+            else:
+                grad = "linear-gradient(90deg,#1f4e79,#5aa0e0)"
+            rows.append(
+                f'<div class="rank-row" style="animation-delay:{idx * 0.05:.2f}s">'
+                f'<span class="rank-no">{idx + 1}</span>'
+                f'<span class="rank-name" title="{row["station_name"]}">{row["station_name"]}</span>'
+                f'<div class="rank-track"><div class="rank-bar" '
+                f'style="width:{width:.1f}%;background:{grad};animation-delay:{0.08 + idx * 0.05:.2f}s"></div></div>'
+                f'<span class="rank-val">{dev:.1f}%</span>'
+                "</div>"
+            )
+        st.html('<div class="rank-chart">' + "".join(rows) + "</div>")
 
     with st.container(border=True):
         st.subheader("怎么读")
