@@ -89,6 +89,8 @@ header[data-testid="stHeader"] {
   width: 100vw !important;
   height: 100vh !important;
   z-index: -2 !important;
+  border: 0 !important;
+  outline: none !important;
 }
 section[data-testid="stSidebar"] {
   display: block !important;
@@ -101,22 +103,49 @@ section[data-testid="stSidebar"] {
   background: transparent !important;
   transition: transform .55s cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
+  overflow: hidden !important;
   border: none !important;
   border-right: 0 !important;
   outline: 0 !important;
   box-shadow: none !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+section[data-testid="stSidebar"]::-webkit-scrollbar,
+section[data-testid="stSidebar"] *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+section[data-testid="stSidebar"] * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 section[data-testid="stSidebar"] > div { background: transparent !important; border: none !important; }
+section[data-testid="stSidebar"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -24px;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(to right, #f2f6f2 0%, #f2f6f2 30%, rgba(242,246,242,0) 100%);
+  pointer-events: none;
+  z-index: 21;
+}
 section[data-testid="stSidebar"] > div:first-child {
-  margin: 12px 8px 12px 12px;
+  margin: 12px 0 12px 12px;
+  width: auto !important;
+  max-width: calc(100% - 12px);
+  box-sizing: border-box;
   height: calc(100vh - 24px);
   padding: 10px 10px 16px;
   background: linear-gradient(135deg, rgba(255,255,255,0.66), rgba(255,255,255,0.46));
   backdrop-filter: blur(36px) saturate(190%);
   -webkit-backdrop-filter: blur(36px) saturate(190%);
-  border: 1px solid rgba(255,255,255,0.55);
+  border: 0 !important;
   border-radius: 26px;
-  box-shadow: 0 18px 50px rgba(12, 40, 34, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -588,12 +617,11 @@ def page_station_bill() -> None:
     query_station = st.query_params.get("station")
     if isinstance(query_station, list):
         query_station = query_station[0] if query_station else None
-    default_index = names.index(query_station) if query_station in names else 0
-    station = st.selectbox("选择站点", names, index=default_index)
+    if query_station not in names:
+        st.info("点击地图上的彩色圆点，查看对应充电站的账单。", title="从地图选择站点")
+        return
+    station = query_station
     row = df.loc[df["station_name"] == station].iloc[0]
-
-    if query_station in names and station != query_station:
-        st.query_params["station"] = station
 
     st.subheader(row["station_name"])
     st.caption(f"{row['district']} · {row['operator']} · 桩数 {int(row['piles'])}")
@@ -817,36 +845,6 @@ def main() -> None:
         candidate = load_data(DATA_PATH)
 
     st.session_state["df"] = candidate
-
-    query_station = st.query_params.get("station")
-    if isinstance(query_station, list):
-        query_station = query_station[0] if query_station else None
-    page_url = getattr(getattr(st, "context", None), "url", "") or ""
-    if query_station in candidate["station_name"].values and "page_station_bill" in page_url:
-        side_row = candidate.loc[candidate["station_name"] == query_station].iloc[0]
-        with st.sidebar:
-            st.markdown("### 站点账单")
-            with st.container(border=True):
-                st.markdown(f"**{side_row['station_name']}**")
-                st.caption(
-                    f"{side_row['district']} · {side_row['operator']} · "
-                    f"{int(side_row['piles'])} 桩"
-                )
-                st.markdown(
-                    f"平台价 **¥{side_row['platform_price']:.2f}/度**  \n"
-                    f"实付价 **¥{side_row['field_price']:.2f}/度**  \n"
-                    f"价格偏差 **{side_row['price_deviation']:+.1f}%**  \n"
-                    f"全成本 **¥{side_row['full_cost_60']:.0f}**"
-                )
-                st.caption(
-                    f"证据等级 {side_row['evidence']} · "
-                    f"反馈 {int(side_row['feedback_count'])} 条"
-                )
-                if st.button("收起账单", key="close_station_bill", width="stretch"):
-                    if "station" in st.query_params:
-                        del st.query_params["station"]
-                    st.rerun()
-
     view = sidebar_filters(candidate)
     st.session_state["view"] = view
 
