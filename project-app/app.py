@@ -31,7 +31,8 @@ GLASS_CSS = """
   --glass-border: rgba(255, 255, 255, 0.92);
   --ink: #122a26;
 }
-html, body, .stApp { background: #dce8e4; }
+html, body { background: #dce8e4; }
+.stApp { background: transparent !important; }
 [data-testid="stToolbar"], [data-testid="stDecoration"], footer { display: none !important; }
 header[data-testid="stHeader"] {
   background: transparent !important;
@@ -71,8 +72,12 @@ header[data-testid="stHeader"] {
 }
 .st-key-map_bg > div { height: 100vh !important; padding: 0 !important; }
 .st-key-map_bg iframe, .st-key-map_bg canvas {
-  width: 100vw !important;
+  width: calc(100vw - 720px) !important;
+  min-width: 320px !important;
   height: 100vh !important;
+  left: 0 !important;
+  right: auto !important;
+  z-index: -3 !important;
 }
 section[data-testid="stSidebar"] {
   background: transparent !important;
@@ -102,12 +107,12 @@ section[data-testid="stSidebar"] > div:first-child {
   box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background: rgba(255, 255, 255, 0.48) !important;
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.76)) !important;
+  backdrop-filter: blur(24px) saturate(175%);
+  -webkit-backdrop-filter: blur(24px) saturate(175%);
+  border: 1px solid rgba(255, 255, 255, 0.86) !important;
   border-radius: 22px !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+  box-shadow: 0 24px 56px rgba(10, 35, 29, 0.18), inset 0 1px 0 rgba(255,255,255,0.95);
 }
 [data-testid="stForm"] {
   background: rgba(255, 255, 255, 0.46) !important;
@@ -139,6 +144,10 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
     margin: 12px;
     padding: 16px 16px 48px;
     border-radius: 24px;
+  }
+  .st-key-map_bg iframe, .st-key-map_bg canvas {
+    width: 100vw !important;
+    min-width: 0 !important;
   }
 }
 </style>
@@ -380,17 +389,29 @@ def page_price_map() -> None:
             ]
         ].sort_values("price_deviation", ascending=False)
         show = show.assign(fake_idle_pct=(show["fake_idle"] * 100).round(0)).drop(columns=["fake_idle"])
-        show = show.reset_index(drop=True)
+        show = show.reset_index(drop=True).rename(
+            columns={
+                "station_name": "站点",
+                "district": "区域",
+                "grid_company": "电网",
+                "operator": "运营商",
+                "platform_price": "平台价（元/度）",
+                "field_price": "实付价（元/度）",
+                "price_deviation": "价格偏差",
+                "full_cost_60": "全成本（60度+停车）",
+                "fake_idle_pct": "假空闲率",
+            }
+        )
         st.dataframe(
             show,
             hide_index=True,
             alt="站点平台价、实付价与价格偏差清单",
             column_config={
-                "platform_price": st.column_config.NumberColumn("平台价（元/度）", format="%.2f"),
-                "field_price": st.column_config.NumberColumn("实付价（元/度）", format="%.2f"),
-                "price_deviation": st.column_config.NumberColumn("价格偏差", format="%.1f%%"),
-                "full_cost_60": st.column_config.NumberColumn("全成本（60度+停车）", format="¥%.0f"),
-                "fake_idle_pct": st.column_config.NumberColumn("假空闲率", format="%.0f%%"),
+                "平台价（元/度）": st.column_config.NumberColumn(format="%.2f"),
+                "实付价（元/度）": st.column_config.NumberColumn(format="%.2f"),
+                "价格偏差": st.column_config.NumberColumn(format="%.1f%%"),
+                "全成本（60度+停车）": st.column_config.NumberColumn(format="¥%.0f"),
+                "假空闲率": st.column_config.NumberColumn(format="%.0f%%"),
             },
         )
 
