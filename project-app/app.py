@@ -72,12 +72,9 @@ header[data-testid="stHeader"] {
 }
 .st-key-map_bg > div { height: 100vh !important; padding: 0 !important; }
 .st-key-map_bg iframe, .st-key-map_bg canvas {
-  width: calc(100vw - 720px) !important;
-  min-width: 320px !important;
+  width: 100vw !important;
   height: 100vh !important;
-  left: 0 !important;
-  right: auto !important;
-  z-index: -3 !important;
+  z-index: -2 !important;
 }
 section[data-testid="stSidebar"] {
   background: transparent !important;
@@ -107,12 +104,12 @@ section[data-testid="stSidebar"] > div:first-child {
   box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 [data-testid="stVerticalBlockBorderWrapper"] {
-  background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.76)) !important;
-  backdrop-filter: blur(24px) saturate(175%);
-  -webkit-backdrop-filter: blur(24px) saturate(175%);
-  border: 1px solid rgba(255, 255, 255, 0.86) !important;
+  background: rgba(255, 255, 255, 0.48) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
   border-radius: 22px !important;
-  box-shadow: 0 24px 56px rgba(10, 35, 29, 0.18), inset 0 1px 0 rgba(255,255,255,0.95);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
 }
 [data-testid="stForm"] {
   background: rgba(255, 255, 255, 0.46) !important;
