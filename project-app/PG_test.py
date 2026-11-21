@@ -154,6 +154,54 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 { color: var(--ink) !important; }
+#panel-controls {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  display: flex;
+  gap: 8px;
+}
+#panel-controls button {
+  border: 1px solid rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  color: #12302b;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(12,40,34,0.14);
+}
+#panel-controls button.active {
+  background: rgba(31,78,121,0.92);
+  color: #fff;
+  border-color: rgba(31,78,121,0.92);
+}
+body.panels-collapsed section[data-testid="stSidebar"] {
+  display: none !important;
+}
+body.panels-collapsed.show-left section[data-testid="stSidebar"] {
+  display: block !important;
+}
+body.panels-collapsed [data-testid="stMainBlockContainer"] {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: hidden !important;
+}
+body.panels-collapsed [data-testid="stMainBlockContainer"]::before {
+  display: none !important;
+}
+body.panels-collapsed.show-right [data-testid="stMainBlockContainer"] {
+  width: min(720px, calc(100vw - 340px)) !important;
+  padding: 20px 22px 64px !important;
+  overflow-y: auto !important;
+}
 @media (max-width: 900px) {
   [data-testid="stMainBlockContainer"] {
     top: 12px;
@@ -175,6 +223,10 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   .st-key-map_bg iframe, .st-key-map_bg canvas {
     width: 100vw !important;
     min-width: 0 !important;
+  }
+  body.panels-collapsed.show-right [data-testid="stMainBlockContainer"] {
+    width: auto !important;
+    padding: 16px 16px 48px !important;
   }
 }
 </style>
@@ -315,6 +367,47 @@ L.tileLayer(
 ).addTo(map);
 L.DomUtil.create('div', 'map-veil', map.getContainer());
 
+function ensurePanelControls() {{
+  try {{
+    const doc = window.parent.document;
+    if (!doc || doc.getElementById('panel-controls')) return;
+    const wrap = doc.createElement('div');
+    wrap.id = 'panel-controls';
+    wrap.innerHTML = '<button type="button" data-side="left">左栏</button><button type="button" data-side="right">右栏</button>';
+    doc.body.appendChild(wrap);
+    function paint() {{
+      wrap.querySelectorAll('button').forEach(b => {{
+        b.classList.toggle('active',
+          b.dataset.side === 'left' ? doc.body.classList.contains('show-left')
+                                    : doc.body.classList.contains('show-right'));
+      }});
+    }}
+    wrap.querySelectorAll('button').forEach(btn => {{
+      btn.addEventListener('click', () => {{
+        doc.body.classList.add('panels-collapsed');
+        if (btn.dataset.side === 'left') {{
+          doc.body.classList.toggle('show-left');
+          doc.body.classList.remove('show-right');
+        }} else {{
+          doc.body.classList.toggle('show-right');
+          doc.body.classList.remove('show-left');
+        }}
+        paint();
+      }});
+    }});
+  }} catch (e) {{}}
+}}
+function collapsePanels() {{
+  try {{
+    const doc = window.parent.document;
+    doc.body.classList.add('panels-collapsed');
+    doc.body.classList.remove('show-left', 'show-right');
+    doc.querySelectorAll('#panel-controls button').forEach(b => b.classList.remove('active'));
+  }} catch (e) {{}}
+}}
+ensurePanelControls();
+map.on('movestart zoomstart', collapsePanels);
+
 function pinColor(v) {{
   if (v >= 20) return '#c82d3c';
   if (v >= 10) return '#f0a528';
@@ -337,6 +430,14 @@ stations.forEach(s => {{
     '实付价：¥' + s.field.toFixed(2) + '/度<br/>' +
     '价格偏差：' + (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%'
   );
+  marker.on('click', () => {{
+    try {{
+      const p = window.parent;
+      if (p.location.pathname.includes('page_station_bill')) {{
+        p.location.href = p.location.pathname + '?station=' + encodeURIComponent(s.name);
+      }}
+    }} catch (e) {{}}
+  }});
 }});
 setTimeout(() => map.invalidateSize(), 250);
 </script>
@@ -457,8 +558,16 @@ def page_station_bill() -> None:
     st.title("站点账单")
     st.caption("把平台价、现场价、电费/服务费/停车费拆开；价格旁边必须有证据。")
 
-    station = st.selectbox("选择站点", sorted(df["station_name"].unique()))
+    names = sorted(df["station_name"].unique())
+    query_station = st.query_params.get("station")
+    if isinstance(query_station, list):
+        query_station = query_station[0] if query_station else None
+    default_index = names.index(query_station) if query_station in names else 0
+    station = st.selectbox("选择站点", names, index=default_index)
     row = df.loc[df["station_name"] == station].iloc[0]
+
+    if query_station in names and station != query_station:
+        st.query_params["station"] = station
 
     st.subheader(row["station_name"])
     st.caption(f"{row['district']} · {row['operator']} · 桩数 {int(row['piles'])}")
@@ -682,6 +791,36 @@ def main() -> None:
         candidate = load_data(DATA_PATH)
 
     st.session_state["df"] = candidate
+
+    query_station = st.query_params.get("station")
+    if isinstance(query_station, list):
+        query_station = query_station[0] if query_station else None
+    page_url = getattr(getattr(st, "context", None), "url", "") or ""
+    if query_station in candidate["station_name"].values and "page_station_bill" in page_url:
+        side_row = candidate.loc[candidate["station_name"] == query_station].iloc[0]
+        with st.sidebar:
+            st.markdown("### 站点账单")
+            with st.container(border=True):
+                st.markdown(f"**{side_row['station_name']}**")
+                st.caption(
+                    f"{side_row['district']} · {side_row['operator']} · "
+                    f"{int(side_row['piles'])} 桩"
+                )
+                st.markdown(
+                    f"平台价 **¥{side_row['platform_price']:.2f}/度**  \n"
+                    f"实付价 **¥{side_row['field_price']:.2f}/度**  \n"
+                    f"价格偏差 **{side_row['price_deviation']:+.1f}%**  \n"
+                    f"全成本 **¥{side_row['full_cost_60']:.0f}**"
+                )
+                st.caption(
+                    f"证据等级 {side_row['evidence']} · "
+                    f"反馈 {int(side_row['feedback_count'])} 条"
+                )
+                if st.button("收起账单", key="close_station_bill", width="stretch"):
+                    if "station" in st.query_params:
+                        del st.query_params["station"]
+                    st.rerun()
+
     view = sidebar_filters(candidate)
     st.session_state["view"] = view
 
