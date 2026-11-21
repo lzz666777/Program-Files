@@ -11,10 +11,13 @@ Streamlit 四页原型，对应当前项目四个重点：
 
 ```powershell
 cd "D:\学校文件\数据要素大赛\project-app"
-C:\电脑应用\Python\.venv\Scripts\streamlit.exe run app.py
+C:\电脑应用\Python\.venv\Scripts\streamlit.exe run PG_test.py
 ```
 
 默认打开 http://localhost:8501。
+
+> PyCharm 里直接运行 `PG_test.py`；`app.py` 是兼容入口，内容只负责调用 `PG_test.main()`。
+> Streamlit Community Cloud 的 Main file path 填 `project-app/PG_test.py`。
 
 ## 界面
 
@@ -28,7 +31,9 @@ C:\电脑应用\Python\.venv\Scripts\streamlit.exe run app.py
 
 ```
 project-app/
-├── app.py
+├── PG_test.py              # 主代码（PyCharm 里运行这个）
+├── app.py                  # 兼容入口，调用 PG_test.main()
+├── run.ps1                 # 一键启动 PG_test.py
 ├── data/
 │   └── stations.csv        # 20 个长沙示例站点
 ├── .streamlit/
