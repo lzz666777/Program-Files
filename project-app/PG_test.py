@@ -369,6 +369,21 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 @media (max-width: 900px) {
   .rank-row { grid-template-columns: 20px 100px minmax(0, 1fr) 50px; gap: 7px; }
 }
+body.hide-left section[data-testid="stSidebar"] {
+  transform: translateX(-105%) !important;
+  pointer-events: none !important;
+}
+body.hide-right [data-testid="stMainBlockContainer"] {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: hidden !important;
+}
+body.hide-right [data-testid="stMainBlockContainer"]::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -609,16 +624,18 @@ function ensurePanelControls() {{
     const p = window.parent;
     const doc = p.document;
     p.__dshTogglePanel = function(side) {{
-      doc.body.classList.add('panels-collapsed');
+      const body = doc.body;
+      body.classList.remove('panels-collapsed', 'show-left', 'show-right');
       if (side === 'left') {{
-        doc.body.classList.toggle('show-left');
+        body.classList.toggle('hide-left');
       }} else {{
-        doc.body.classList.toggle('show-right');
+        body.classList.toggle('hide-right');
       }}
       doc.querySelectorAll('#panel-controls button').forEach((b) => {{
-        b.classList.toggle('active',
-          b.dataset.side === 'left' ? doc.body.classList.contains('show-left')
-                                    : doc.body.classList.contains('show-right'));
+        const hidden = body.classList.contains(
+          b.dataset.side === 'left' ? 'hide-left' : 'hide-right'
+        );
+        b.classList.toggle('active', !hidden);
       }});
     }};
     let wrap = doc.getElementById('panel-controls');
@@ -628,16 +645,21 @@ function ensurePanelControls() {{
       wrap.innerHTML = '<button type="button" data-side="left">左栏</button><button type="button" data-side="right">右栏</button>';
       doc.body.appendChild(wrap);
     }}
+    doc.body.classList.remove('panels-collapsed', 'show-left', 'show-right');
     wrap.querySelectorAll('button').forEach((btn) => {{
       btn.setAttribute('onclick', "window.__dshTogglePanel('" + btn.dataset.side + "')");
+      const hidden = doc.body.classList.contains(
+        btn.dataset.side === 'left' ? 'hide-left' : 'hide-right'
+      );
+      btn.classList.toggle('active', !hidden);
     }});
   }} catch (e) {{}}
 }}
 function collapsePanels() {{
   try {{
     const doc = window.parent.document;
-    doc.body.classList.add('panels-collapsed');
-    doc.body.classList.remove('show-left', 'show-right');
+    doc.body.classList.remove('panels-collapsed', 'show-left', 'show-right');
+    doc.body.classList.add('hide-left', 'hide-right');
     doc.querySelectorAll('#panel-controls button').forEach(b => b.classList.remove('active'));
   }} catch (e) {{}}
 }}
@@ -675,7 +697,7 @@ function showBillInline(s) {{
     const main = doc.querySelector('[data-testid="stMainBlockContainer"]');
     if (!main) return;
 
-    doc.body.classList.add('show-right');
+    doc.body.classList.remove('hide-right', 'panels-collapsed', 'show-left', 'show-right');
     const rightBtn = doc.querySelector('#panel-controls button[data-side="right"]');
     if (rightBtn) rightBtn.classList.add('active');
 
