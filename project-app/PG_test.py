@@ -1,4 +1,4 @@
-﻿"""
+"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -44,7 +44,7 @@ header[data-testid="stHeader"] {
   right: 22px;
   bottom: 18px;
   left: auto;
-  width: 720px;
+  width: min(720px, calc(100vw - 340px));
   max-width: none;
   margin: 0;
   padding: 20px 22px 64px;
@@ -62,7 +62,7 @@ header[data-testid="stHeader"] {
   top: 18px;
   right: 22px;
   bottom: 18px;
-  width: 720px;
+  width: min(720px, calc(100vw - 340px));
   z-index: -1;
   background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.44));
   backdrop-filter: blur(46px) saturate(190%);
@@ -88,6 +88,7 @@ header[data-testid="stHeader"] {
   z-index: -2 !important;
 }
 section[data-testid="stSidebar"] {
+  z-index: 20 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
