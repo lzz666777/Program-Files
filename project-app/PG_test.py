@@ -204,8 +204,8 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 #panel-controls {
   position: fixed;
   top: 64px;
-  left: 320px;
-  transform: none;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 99999;
   display: flex;
   gap: 8px;
@@ -260,10 +260,6 @@ body.panels-collapsed.show-right [data-testid="stMainBlockContainer"]::before {
   visibility: visible !important;
 }
 @media (max-width: 900px) {
-  #panel-controls {
-    left: 50%;
-    transform: translateX(-50%);
-  }
   [data-testid="stMainBlockContainer"] {
     top: 12px;
     right: 12px;
