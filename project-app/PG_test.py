@@ -201,6 +201,46 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 { color: var(--ink) !important; }
+#bill-content {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  padding: 72px 26px 40px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.86));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+#bill-content .bill-head { display: flex; justify-content: space-between; align-items: center; }
+#bill-content h2 { margin: 0; font-size: 30px; }
+#bill-content .bill-close {
+  border: 0;
+  background: rgba(255,255,255,0.72);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+#bill-content .bill-name { font-size: 24px; font-weight: 700; margin: 14px 0 4px; }
+#bill-content .bill-sub { color: #556; font-size: 13px; margin-bottom: 14px; }
+#bill-content .bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+#bill-content .bill-card {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+#bill-content .bill-card span { font-size: 12px; color: #667; }
+#bill-content .bill-card b { display: block; font-size: 22px; margin-top: 4px; }
+#bill-content .bill-row { font-size: 14px; line-height: 1.9; }
+#bill-content .bill-tag {
+  display: inline-block;
+  background: rgba(31,78,121,0.08);
+  color: #1f4e79;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-right: 6px;
+}
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -483,7 +523,43 @@ function ensureStationBridge() {{
 }}
 ensureStationBridge();
 
+function showBillInline(s) {{
+  try {{
+    const doc = window.parent.document;
+    const main = doc.querySelector('[data-testid="stMainBlockContainer"]');
+    if (!main) return;
+    let content = doc.getElementById('bill-content');
+    if (!content) {{
+      content = doc.createElement('div');
+      content.id = 'bill-content';
+      main.appendChild(content);
+      content.addEventListener('click', (e) => {{
+        if (e.target.closest('[data-close]')) content.remove();
+      }});
+    }}
+    const card = (label, value) =>
+      '<div class="bill-card"><span>' + label + '</span><b>' + value + '</b></div>';
+    content.innerHTML =
+      '<div class="bill-head"><h2>站点账单</h2><button class="bill-close" data-close>关闭</button></div>' +
+      '<div class="bill-name">' + s.name + '</div>' +
+      '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
+      '<div><span class="bill-tag">电网：' + s.grid + '</span><span class="bill-tag">证据等级：' + s.evidence + '</span></div>' +
+      '<div class="bill-grid">' +
+        card('平台价', '¥' + s.platform.toFixed(2) + '/度') +
+        card('实地实付', '¥' + s.field.toFixed(2) + '/度') +
+        card('价格偏差', (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%') +
+        card('全成本', '¥' + s.full_cost.toFixed(0)) +
+      '</div>' +
+      '<div class="bill-card"><span>一次充电的钱花在哪</span><div class="bill-row">' +
+        '电费 ¥' + (s.elec * 60).toFixed(0) + ' · 服务费 ¥' + (s.service * 60).toFixed(0) +
+        ' · 停车费 ¥' + s.parking.toFixed(0) +
+      '</div></div>' +
+      '<div class="bill-card"><span>最近反馈</span><div class="bill-row">' + s.feedback + ' 条；带账单/照片的证据优先核验。</div></div>';
+  }} catch (e) {{}}
+}}
+
 map.on('movestart zoomstart', collapsePanels);
+
 
 function pinColor(v) {{
   if (v >= 20) return '#c82d3c';
@@ -509,15 +585,8 @@ stations.forEach(s => {{
   );
   marker.on('popupopen', () => {{
     try {{
-      const p = window.parent;
-      if (p.location.pathname.includes('page_station_bill')) {{
-        const a = p.document.createElement('a');
-        a.href = p.location.pathname + '?station=' + encodeURIComponent(s.name);
-        a.style.display = 'none';
-        p.document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 100);
-      }}
+      showBillInline(s);
+      setTimeout(() => marker.closePopup(), 30);
     }} catch (e) {{}}
   }});
 }});
