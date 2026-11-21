@@ -240,21 +240,41 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 #bill-content .bill-grid .bill-card { margin: 0; }
 #bill-content .bill-cost { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
 #bill-content .pie3d {
-  width: 170px;
-  height: 118px;
+  width: 176px;
+  height: 124px;
   perspective: 620px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+#bill-content .pie-side {
+  position: absolute;
+  top: 16px;
+  width: 138px;
+  height: 138px;
+  border-radius: 50%;
+  background: rgba(18, 44, 61, 0.35);
+  transform: rotateX(58deg) rotateZ(-18deg);
+  filter: blur(.4px);
 }
 #bill-content .pie {
   width: 138px;
   height: 138px;
   border-radius: 50%;
+  position: relative;
+  z-index: 2;
   transform: rotateX(58deg) rotateZ(-18deg);
   transform-origin: center;
   box-shadow: 0 20px 24px rgba(15,40,35,0.2), inset 0 0 0 1px rgba(255,255,255,0.55);
   animation: pieIn .7s cubic-bezier(.22,1,.36,1) .08s both;
+}
+#bill-content .pie::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.4), rgba(255,255,255,0) 56%);
 }
 @keyframes pieIn {
   0% { opacity: 0; transform: rotateX(58deg) rotateZ(-18deg) scale(.35); }
@@ -277,6 +297,14 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   border-radius: 3px;
   margin-right: 6px;
 }
+#bill-content .bill-legend b { color: #1f4e79; margin-left: 4px; }
+#bill-content .bill-total {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(31,78,121,0.14);
+  font-size: 13px;
+}
+#bill-content .bill-total b { font-size: 17px; }
 #bill-content .bill-fb-item {
   font-size: 13px;
   line-height: 1.7;
@@ -310,6 +338,69 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 }
 #bill-content .bill-tag.grid { background: rgba(31,78,121,0.12); color: #1f4e79; }
 #bill-content .bill-tag.evidence { background: rgba(35,145,95,0.14); color: #1a6b3c; }
+.cmp-chart {
+  position: relative;
+  height: 210px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 42px;
+  padding: 30px 12px 0;
+  border-bottom: 1px solid rgba(31,78,121,0.10);
+}
+.cmp-chart::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 58px;
+  height: 1px;
+  background: rgba(31,78,121,0.06);
+}
+.cmp-col {
+  width: 92px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.cmp-value { font-size: 14px; font-weight: 700; color: #1f4e79; margin-bottom: 8px; }
+.cmp-track {
+  width: 48px;
+  height: 128px;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(31,78,121,0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cmp-bar {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  animation: cmpRise .95s cubic-bezier(.22,1,.36,1) forwards;
+  box-shadow: 0 6px 16px rgba(15,40,35,0.12);
+}
+.cmp-bar.base { background: linear-gradient(180deg, #a9bdcc, #7f9cb2); }
+.cmp-bar.better { background: linear-gradient(180deg, #5aa0e0, #2f6fb0); }
+.cmp-label { font-size: 12px; color: #667; margin-top: 10px; }
+.cmp-delta {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #23915f;
+  background: rgba(35,145,95,0.10);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+@keyframes cmpRise { to { transform: scaleY(1); } }
+@media (max-width: 900px) {
+  .cmp-chart { gap: 24px; height: 190px; }
+}
 .rank-chart { padding: 4px 2px 2px; }
 .rank-row {
   display: grid;
@@ -555,6 +646,34 @@ def price_color(value: float) -> list[int]:
     return [35, 145, 95, 210]
 
 
+def comparison_chart(
+    current: float,
+    proposed: float,
+    current_text: str,
+    proposed_text: str,
+    delta_text: str,
+    proposed_color: str = "#2f6fb0",
+) -> str:
+    max_value = max(abs(current), abs(proposed), 1e-9)
+    h1 = max(8.0, abs(current) / max_value * 100)
+    h2 = max(8.0, abs(proposed) / max_value * 100)
+    return f"""
+<div class="cmp-chart">
+  <div class="cmp-delta">{delta_text}</div>
+  <div class="cmp-col">
+    <div class="cmp-value">{current_text}</div>
+    <div class="cmp-track"><div class="cmp-bar base" style="height:{h1:.1f}%;animation-delay:.05s"></div></div>
+    <div class="cmp-label">现状</div>
+  </div>
+  <div class="cmp-col">
+    <div class="cmp-value">{proposed_text}</div>
+    <div class="cmp-track"><div class="cmp-bar better" style="height:{h2:.1f}%;background:linear-gradient(180deg,{proposed_color}bb,{proposed_color});animation-delay:.15s"></div></div>
+    <div class="cmp-label">方案</div>
+  </div>
+</div>
+"""
+
+
 def make_map(data: pd.DataFrame) -> str:
     coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
     stations = []
@@ -757,6 +876,7 @@ function showBillInline(s) {{
     const total = Math.max(1, elec + service + parking);
     const p1 = (elec / total) * 100;
     const p2 = ((elec + service) / total) * 100;
+    const p3 = 100 - p2;
     const pieBg = 'conic-gradient(#2f6fb0 0 ' + p1.toFixed(1) + '%, #48a37b ' +
       p1.toFixed(1) + '% ' + p2.toFixed(1) + '%, #e0a33a ' + p2.toFixed(1) + '% 100%)';
     const feedback = s.feedback_items || [];
@@ -780,11 +900,12 @@ function showBillInline(s) {{
       '</div>' +
       '<div class="bill-card"><span>一次充电的钱花在哪</span>' +
         '<div class="bill-cost">' +
-          '<div class="pie3d"><div class="pie" style="background:' + pieBg + '"></div></div>' +
+          '<div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:' + pieBg + '"></div></div>' +
           '<div class="bill-legend">' +
-            '<div><i style="background:#2f6fb0"></i>电费 ¥' + elec.toFixed(0) + '</div>' +
-            '<div><i style="background:#48a37b"></i>服务费 ¥' + service.toFixed(0) + '</div>' +
-            '<div><i style="background:#e0a33a"></i>停车费 ¥' + parking.toFixed(0) + '</div>' +
+            '<div><i style="background:#2f6fb0"></i>电费 ¥' + elec.toFixed(0) + ' <b>' + p1.toFixed(0) + '%</b></div>' +
+            '<div><i style="background:#48a37b"></i>服务费 ¥' + service.toFixed(0) + ' <b>' + (p2 - p1).toFixed(0) + '%</b></div>' +
+            '<div><i style="background:#e0a33a"></i>停车费 ¥' + parking.toFixed(0) + ' <b>' + p3.toFixed(0) + '%</b></div>' +
+            '<div class="bill-total">单次合计 <b>¥' + total.toFixed(0) + '</b></div>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -1088,17 +1209,29 @@ def page_sandbox() -> None:
     with left:
         with st.container(border=True):
             st.subheader("等待时间对比")
-            compare_wait = pd.DataFrame(
-                {"方案": ["现状", "方案"], "平均等待": [base_wait, new_wait]}
+            st.html(
+                comparison_chart(
+                    base_wait,
+                    new_wait,
+                    f"{base_wait:.1f} 分钟",
+                    f"{new_wait:.1f} 分钟",
+                    f"{new_wait - base_wait:+.1f} 分钟",
+                    "#2f6fb0",
+                )
             )
-            st.bar_chart(compare_wait, x="方案", y="平均等待", alt="现状与方案平均等待对比")
     with right:
         with st.container(border=True):
             st.subheader("假空闲率对比")
-            compare_idle = pd.DataFrame(
-                {"方案": ["现状", "方案"], "假空闲率": [base_fake, new_fake]}
+            st.html(
+                comparison_chart(
+                    base_fake,
+                    new_fake,
+                    f"{base_fake:.1%}",
+                    f"{new_fake:.1%}",
+                    f"{(new_fake - base_fake) * 100:+.1f}pp",
+                    "#23915f",
+                )
             )
-            st.bar_chart(compare_idle, x="方案", y="假空闲率", alt="现状与方案假空闲率对比")
 
     with st.container(border=True):
         st.subheader("当前假设")
