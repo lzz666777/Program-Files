@@ -51,8 +51,11 @@ header[data-testid="stHeader"] {
 }
 [data-testid="stMainBlockContainer"]::before {
   content: "";
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  bottom: 18px;
+  width: 680px;
   z-index: -1;
   background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.44));
   backdrop-filter: blur(46px) saturate(190%);
@@ -60,6 +63,7 @@ header[data-testid="stHeader"] {
   border: 1px solid rgba(255,255,255,0.78);
   border-radius: 30px;
   box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22), inset 0 1px 0 rgba(255,255,255,0.65);
+  pointer-events: none;
 }
 .st-key-map_bg {
   position: fixed !important;
@@ -140,6 +144,14 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
     max-width: calc(100vw - 24px);
     margin: 12px;
     padding: 16px 16px 48px;
+    border-radius: 24px;
+  }
+  [data-testid="stMainBlockContainer"]::before {
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
     border-radius: 24px;
   }
   .st-key-map_bg iframe, .st-key-map_bg canvas {
