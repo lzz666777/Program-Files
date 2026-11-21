@@ -218,27 +218,34 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   padding: 6px 12px;
   cursor: pointer;
 }
-#bill-content .bill-name { font-size: 24px; font-weight: 700; margin: 14px 0 4px; }
-#bill-content .bill-sub { color: #556; font-size: 13px; margin-bottom: 14px; }
+#bill-content .bill-name { font-size: 28px; font-weight: 700; margin: 14px 0 4px; }
+#bill-content .bill-sub { color: #556; font-size: 14px; margin-bottom: 14px; }
+#bill-content .bill-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 #bill-content .bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
 #bill-content .bill-card {
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.68);
+  border: 1px solid rgba(255,255,255,0.8);
   border-radius: 18px;
   padding: 12px 14px;
+  box-shadow: 0 12px 30px rgba(15,40,35,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+#bill-content .bill-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 46px rgba(15,40,35,0.16), inset 0 1px 0 rgba(255,255,255,0.85);
 }
 #bill-content .bill-card span { font-size: 12px; color: #667; }
-#bill-content .bill-card b { display: block; font-size: 22px; margin-top: 4px; }
+#bill-content .bill-card b { display: block; font-size: 24px; margin-top: 4px; }
 #bill-content .bill-row { font-size: 14px; line-height: 1.9; }
 #bill-content .bill-tag {
   display: inline-block;
-  background: rgba(31,78,121,0.08);
-  color: #1f4e79;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 12px;
-  margin-right: 6px;
+  padding: 5px 11px;
+  font-size: 13px;
+  font-weight: 600;
 }
+#bill-content .bill-tag.grid { background: rgba(31,78,121,0.12); color: #1f4e79; }
+#bill-content .bill-tag.evidence { background: rgba(35,145,95,0.14); color: #1a6b3c; }
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -521,12 +528,32 @@ function ensureStationBridge() {{
 }}
 ensureStationBridge();
 
+function closeBillContent(doc) {{
+  const c = doc.getElementById('bill-content');
+  if (!c) return;
+  (c.__dshHidden || []).forEach((ch) => {{
+    ch.style.display = ch.__dshOldDisplay || '';
+    ch.__dshHiddenFlag = false;
+  }});
+  c.remove();
+}}
+
 function showBillInline(s) {{
   try {{
-    const doc = window.parent.document;
+    const p = window.parent;
+    const doc = p.document;
     const main = doc.querySelector('[data-testid="stMainBlockContainer"]');
     if (!main) return;
+
+    doc.body.classList.add('show-right');
+    const rightBtn = doc.querySelector('#panel-controls button[data-side="right"]');
+    if (rightBtn) rightBtn.classList.add('active');
+
     let content = doc.getElementById('bill-content');
+    if (content && content.dataset.page !== p.location.pathname) {{
+      closeBillContent(doc);
+      content = null;
+    }}
     if (!content) {{
       content = doc.createElement('div');
       content.id = 'bill-content';
@@ -548,22 +575,30 @@ function showBillInline(s) {{
         }}
       }}
       content.addEventListener('click', (e) => {{
-        if (e.target.closest('[data-close]')) {{
-          (content.__dshHidden || []).forEach((ch) => {{
-            ch.style.display = ch.__dshOldDisplay || '';
-            ch.__dshHiddenFlag = false;
-          }});
-          content.remove();
-        }}
+        if (e.target.closest('[data-close]')) closeBillContent(doc);
       }});
     }}
+    content.dataset.page = p.location.pathname;
+
+    if (!p.__dshBillWatch) {{
+      p.__dshBillWatch = setInterval(() => {{
+        const c = p.document.getElementById('bill-content');
+        if (c && c.dataset.page && c.dataset.page !== p.location.pathname) {{
+          closeBillContent(p.document);
+        }}
+      }}, 500);
+    }}
+
     const card = (label, value) =>
       '<div class="bill-card"><span>' + label + '</span><b>' + value + '</b></div>';
     content.innerHTML =
       '<div class="bill-head"><h2>站点账单</h2><button class="bill-close" data-close>关闭</button></div>' +
       '<div class="bill-name">' + s.name + '</div>' +
       '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
-      '<div><span class="bill-tag">电网：' + s.grid + '</span><span class="bill-tag">证据等级：' + s.evidence + '</span></div>' +
+      '<div class="bill-tags">' +
+        '<span class="bill-tag grid">电网：' + s.grid + '</span>' +
+        '<span class="bill-tag evidence">证据等级：' + s.evidence + '</span>' +
+      '</div>' +
       '<div class="bill-grid">' +
         card('平台价', '¥' + s.platform.toFixed(2) + '/度') +
         card('实地实付', '¥' + s.field.toFixed(2) + '/度') +
