@@ -207,9 +207,7 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   z-index: 5;
   overflow-y: auto;
   padding: 72px 26px 40px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,255,255,0.86));
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: transparent;
 }
 #bill-content .bill-head { display: flex; justify-content: space-between; align-items: center; }
 #bill-content h2 { margin: 0; font-size: 30px; }
@@ -533,8 +531,30 @@ function showBillInline(s) {{
       content = doc.createElement('div');
       content.id = 'bill-content';
       main.appendChild(content);
+      content.__dshHidden = [];
+      const mapEl = main.querySelector('.st-key-map_bg');
+      if (mapEl) {{
+        let node = mapEl;
+        while (node && node !== main) {{
+          const parent = node.parentElement;
+          [...parent.children].forEach((ch) => {{
+            if (ch === node || ch === content || ch.contains(mapEl) || ch.__dshHiddenFlag) return;
+            ch.__dshOldDisplay = ch.style.display;
+            ch.style.display = 'none';
+            ch.__dshHiddenFlag = true;
+            content.__dshHidden.push(ch);
+          }});
+          node = parent;
+        }}
+      }}
       content.addEventListener('click', (e) => {{
-        if (e.target.closest('[data-close]')) content.remove();
+        if (e.target.closest('[data-close]')) {{
+          (content.__dshHidden || []).forEach((ch) => {{
+            ch.style.display = ch.__dshOldDisplay || '';
+            ch.__dshHiddenFlag = false;
+          }});
+          content.remove();
+        }}
       }});
     }}
     const card = (label, value) =>
