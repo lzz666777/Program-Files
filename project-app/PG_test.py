@@ -213,6 +213,10 @@ body.panels-collapsed.show-right [data-testid="stMainBlockContainer"] {
   padding: 20px 22px 64px !important;
   overflow-y: auto !important;
 }
+body.panels-collapsed.show-right [data-testid="stMainBlockContainer"]::before {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 @media (max-width: 900px) {
   [data-testid="stMainBlockContainer"] {
     top: 12px;
@@ -398,10 +402,8 @@ function ensurePanelControls() {{
         doc.body.classList.add('panels-collapsed');
         if (btn.dataset.side === 'left') {{
           doc.body.classList.toggle('show-left');
-          doc.body.classList.remove('show-right');
         }} else {{
           doc.body.classList.toggle('show-right');
-          doc.body.classList.remove('show-left');
         }}
         paint();
       }});
