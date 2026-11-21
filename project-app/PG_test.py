@@ -20,6 +20,7 @@ st.set_page_config(
     page_title="桩尽其用 · 价格与车位治理",
     page_icon=":material/ev_station:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 DATA_PATH = Path(__file__).parent / "data" / "stations.csv"
