@@ -99,7 +99,8 @@ section[data-testid="stSidebar"] {
   min-width: 300px !important;
   z-index: 20 !important;
   background: transparent !important;
-  transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
+  transition: transform .3s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
   border: none !important;
   box-shadow: none !important;
 }
@@ -189,12 +190,10 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 }
 body.panels-collapsed section[data-testid="stSidebar"] {
   transform: translateX(-105%) !important;
-  opacity: 0 !important;
   pointer-events: none !important;
 }
 body.panels-collapsed.show-left section[data-testid="stSidebar"] {
   transform: none !important;
-  opacity: 1 !important;
   pointer-events: auto !important;
 }
 body.panels-collapsed [data-testid="stMainBlockContainer"] {
