@@ -89,6 +89,12 @@ header[data-testid="stHeader"] {
   z-index: -2 !important;
 }
 section[data-testid="stSidebar"] {
+  display: block !important;
+  visibility: visible !important;
+  transform: none !important;
+  margin-left: 0 !important;
+  width: 300px !important;
+  min-width: 300px !important;
   z-index: 20 !important;
   background: transparent !important;
   border: none !important;
@@ -289,8 +295,8 @@ def make_map(data: pd.DataFrame) -> str:
   html, body, #map {{ height: 100%; margin: 0; background: #e7efe9; }}
   #map {{ position: relative; }}
   .leaflet-container {{ background: #e7efe9; font-family: "Microsoft YaHei", sans-serif; }}
-  .leaflet-tile-pane {{ opacity: 0.58; filter: grayscale(0.35) saturate(0.45) brightness(1.08) contrast(0.90) blur(0.45px); }}
-  .map-veil {{ position: absolute; inset: 0; z-index: 350; pointer-events: none; background: rgba(248, 251, 248, 0.28); }}
+  .leaflet-tile-pane {{ opacity: 0.78; filter: grayscale(0.25) saturate(0.60) brightness(1.05) contrast(0.94); }}
+  .map-veil {{ position: absolute; inset: 0; z-index: 350; pointer-events: none; background: rgba(248, 251, 248, 0.18); }}
   .leaflet-control-attribution {{ display: none; }}
   .leaflet-popup-content {{ font-family: "Microsoft YaHei", sans-serif; font-size: 13px; line-height: 1.6; }}
   .leaflet-popup-content b {{ color: #12302b; }}
