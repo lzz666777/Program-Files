@@ -55,7 +55,7 @@ header[data-testid="stHeader"] {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  transition: width .3s cubic-bezier(.2,.8,.2,1), padding .3s cubic-bezier(.2,.8,.2,1);
+  transition: width .55s cubic-bezier(.22, 1, .36, 1), padding .55s cubic-bezier(.22, 1, .36, 1);
   z-index: 3;
 }
 [data-testid="stMainBlockContainer"]::before {
@@ -73,7 +73,7 @@ header[data-testid="stHeader"] {
   border-radius: 30px;
   box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22), inset 0 1px 0 rgba(255,255,255,0.65);
   pointer-events: none;
-  transition: opacity .25s ease, visibility .25s ease;
+  transition: opacity .4s ease, visibility .4s ease;
 }
 .st-key-map_bg {
   position: fixed !important;
@@ -99,7 +99,7 @@ section[data-testid="stSidebar"] {
   min-width: 300px !important;
   z-index: 20 !important;
   background: transparent !important;
-  transition: transform .3s cubic-bezier(.2,.8,.2,1);
+  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
   border: none !important;
   border-right: 0 !important;
