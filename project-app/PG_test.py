@@ -1,4 +1,4 @@
-"""
+﻿"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -39,14 +39,21 @@ header[data-testid="stHeader"] {
   backdrop-filter: none !important;
 }
 [data-testid="stMainBlockContainer"] {
-  max-width: 680px;
-  margin: 18px 22px 18px auto;
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  bottom: 18px;
+  left: auto;
+  width: 720px;
+  max-width: none;
+  margin: 0;
   padding: 20px 22px 64px;
-  min-height: calc(100vh - 36px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  position: relative;
   z-index: 3;
 }
 [data-testid="stMainBlockContainer"]::before {
@@ -55,7 +62,7 @@ header[data-testid="stHeader"] {
   top: 18px;
   right: 22px;
   bottom: 18px;
-  width: 680px;
+  width: 720px;
   z-index: -1;
   background: linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.44));
   backdrop-filter: blur(46px) saturate(190%);
@@ -141,8 +148,11 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 [data-testid="stSidebar"] h3 { color: var(--ink) !important; }
 @media (max-width: 900px) {
   [data-testid="stMainBlockContainer"] {
-    max-width: calc(100vw - 24px);
-    margin: 12px;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
     padding: 16px 16px 48px;
     border-radius: 24px;
   }
