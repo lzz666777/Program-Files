@@ -246,9 +246,24 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   height: 138px;
   border-radius: 50%;
   transform: rotateX(58deg) rotateZ(-18deg);
+  transform-origin: center;
   box-shadow: 0 20px 24px rgba(15,40,35,0.2), inset 0 0 0 1px rgba(255,255,255,0.55);
+  animation: pieIn .7s cubic-bezier(.22,1,.36,1) .08s both;
 }
-#bill-content .bill-legend { font-size: 13px; line-height: 1.9; }
+@keyframes pieIn {
+  0% { opacity: 0; transform: rotateX(58deg) rotateZ(-18deg) scale(.35); }
+  65% { opacity: 1; transform: rotateX(58deg) rotateZ(-18deg) scale(1.06); }
+  100% { opacity: 1; transform: rotateX(58deg) rotateZ(-18deg) scale(1); }
+}
+#bill-content .bill-legend {
+  font-size: 13px;
+  line-height: 1.9;
+  animation: legendIn .55s ease .18s both;
+}
+@keyframes legendIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
 #bill-content .bill-legend i {
   display: inline-block;
   width: 10px;
