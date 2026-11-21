@@ -213,7 +213,9 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   z-index: 5;
   overflow-y: auto;
   padding: 72px 26px 40px;
-  background: transparent;
+  background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,255,255,0.82));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 #bill-content .bill-head { display: flex; justify-content: space-between; align-items: center; }
 #bill-content h2 { margin: 0; font-size: 30px; }
