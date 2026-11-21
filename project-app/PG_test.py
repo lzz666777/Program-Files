@@ -55,6 +55,7 @@ header[data-testid="stHeader"] {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  transition: width .3s cubic-bezier(.2,.8,.2,1), padding .3s cubic-bezier(.2,.8,.2,1);
   z-index: 3;
 }
 [data-testid="stMainBlockContainer"]::before {
@@ -72,6 +73,7 @@ header[data-testid="stHeader"] {
   border-radius: 30px;
   box-shadow: 0 30px 80px rgba(12, 40, 34, 0.22), inset 0 1px 0 rgba(255,255,255,0.65);
   pointer-events: none;
+  transition: opacity .25s ease, visibility .25s ease;
 }
 .st-key-map_bg {
   position: fixed !important;
@@ -97,6 +99,7 @@ section[data-testid="stSidebar"] {
   min-width: 300px !important;
   z-index: 20 !important;
   background: transparent !important;
+  transition: transform .3s cubic-bezier(.2,.8,.2,1), opacity .25s ease;
   border: none !important;
   box-shadow: none !important;
 }
@@ -156,7 +159,7 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
 [data-testid="stSidebar"] h3 { color: var(--ink) !important; }
 #panel-controls {
   position: fixed;
-  top: 14px;
+  top: 64px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 99999;
@@ -175,17 +178,24 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(12,40,34,0.14);
+  transition: background .2s ease, color .2s ease, transform .15s ease;
 }
+#panel-controls button:hover { transform: translateY(-1px); }
+#panel-controls button:active { transform: scale(.96); }
 #panel-controls button.active {
   background: rgba(31,78,121,0.92);
   color: #fff;
   border-color: rgba(31,78,121,0.92);
 }
 body.panels-collapsed section[data-testid="stSidebar"] {
-  display: none !important;
+  transform: translateX(-105%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 body.panels-collapsed.show-left section[data-testid="stSidebar"] {
-  display: block !important;
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 body.panels-collapsed [data-testid="stMainBlockContainer"] {
   width: 0 !important;
@@ -195,7 +205,8 @@ body.panels-collapsed [data-testid="stMainBlockContainer"] {
   overflow: hidden !important;
 }
 body.panels-collapsed [data-testid="stMainBlockContainer"]::before {
-  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 body.panels-collapsed.show-right [data-testid="stMainBlockContainer"] {
   width: min(720px, calc(100vw - 340px)) !important;
