@@ -102,9 +102,11 @@ section[data-testid="stSidebar"] {
   transition: transform .3s cubic-bezier(.2,.8,.2,1);
   will-change: transform;
   border: none !important;
+  border-right: 0 !important;
+  outline: 0 !important;
   box-shadow: none !important;
 }
-section[data-testid="stSidebar"] > div { background: transparent !important; }
+section[data-testid="stSidebar"] > div { background: transparent !important; border: none !important; }
 section[data-testid="stSidebar"] > div:first-child {
   margin: 12px 8px 12px 12px;
   height: calc(100vh - 24px);
@@ -112,10 +114,17 @@ section[data-testid="stSidebar"] > div:first-child {
   background: linear-gradient(135deg, rgba(255,255,255,0.66), rgba(255,255,255,0.46));
   backdrop-filter: blur(36px) saturate(190%);
   -webkit-backdrop-filter: blur(36px) saturate(190%);
-  border: 1px solid rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.55);
   border-radius: 26px;
-  box-shadow: 18px 0 60px rgba(12, 40, 34, 0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+  box-shadow: 0 18px 50px rgba(12, 40, 34, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+section[data-testid="stSidebar"] > div:first-child::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 [data-testid="stMetric"] {
   background: rgba(255, 255, 255, 0.58) !important;
@@ -125,6 +134,11 @@ section[data-testid="stSidebar"] > div:first-child {
   border-radius: 20px !important;
   padding: 14px 16px !important;
   box-shadow: 0 12px 30px rgba(15, 40, 35, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+[data-testid="stMetric"]:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 46px rgba(15, 40, 35, 0.16), inset 0 1px 0 rgba(255,255,255,0.75);
 }
 [data-testid="stVerticalBlockBorderWrapper"] {
   background: rgba(255, 255, 255, 0.48) !important;
