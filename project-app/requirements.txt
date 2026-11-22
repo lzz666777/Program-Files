@@ -1,3 +1,2 @@
 streamlit>=1.57
 pandas>=2.0
-pyecharts>=2.0

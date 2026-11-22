@@ -11,13 +11,10 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from urllib.parse import quote
 
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-from pyecharts import options as opts
-from pyecharts.charts import Pie
 
 st.set_page_config(
     page_title="桩尽其用 · 价格与车位治理",
@@ -808,120 +805,50 @@ def comparison_chart(
 """
 
 
-def cost_pie_html(elec: float, service: float, parking: float) -> str:
-    """带引导线与标签的花费饼图。"""
-    total = max(1.0, elec + service + parking)
-    items = [
-        ("电费", elec, "#2f6fb0"),
-        ("服务费", service, "#48a37b"),
-        ("停车费", parking, "#e0a33a"),
-    ]
-    cx, cy, radius = 280.0, 168.0, 112.0
-    angle = -90.0
-    paths = []
-    leaders = []
-    labels = []
-    for name, value, color in items:
-        fraction = value / total
-        sweep = fraction * 360.0
-        mid = math.radians(angle + sweep / 2.0)
-        ox = math.cos(mid) * 4
-        oy = math.sin(mid) * 4
-        a1 = math.radians(angle)
-        a2 = math.radians(angle + sweep)
-        x1 = cx + ox + radius * math.cos(a1)
-        y1 = cy + oy + radius * math.sin(a1)
-        x2 = cx + ox + radius * math.cos(a2)
-        y2 = cy + oy + radius * math.sin(a2)
-        large = 1 if sweep > 180 else 0
-        paths.append(
-            f'<path d="M {cx + ox:.1f} {cy + oy:.1f} L {x1:.1f} {y1:.1f} '
-            f'A {radius:.0f} {radius:.0f} 0 {large} 1 {x2:.1f} {y2:.1f} Z" '
-            f'fill="{color}" stroke="#ffffff" stroke-width="2"/>'
-        )
-        edge_x = cx + ox + math.cos(mid) * (radius + 4)
-        edge_y = cy + oy + math.sin(mid) * (radius + 4)
-        lx = cx + ox + math.cos(mid) * (radius + 30)
-        ly = cy + oy + math.sin(mid) * (radius + 30)
-        anchor = "start" if math.cos(mid) >= 0 else "end"
-        tx = lx + (10 if anchor == "start" else -10)
-        leaders.append(
-            f'<polyline points="{edge_x:.1f},{edge_y:.1f} {lx:.1f},{ly:.1f} {tx:.1f},{ly:.1f}" '
-            f'fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
-        )
-        labels.append(
-            f'<text x="{tx:.1f}" y="{ly + 4:.1f}" text-anchor="{anchor}" '
-            f'font-size="14" fill="#1f4e79" font-weight="600">'
-            f'{name} ¥{value:.0f} · {fraction * 100:.0f}%</text>'
-        )
-        angle += sweep
-    svg = (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 340" width="560" height="340">'
-        + "".join(paths)
-        + "".join(leaders)
-        + "".join(labels)
-        + "</svg>"
-    )
-    return (
-        '<div class="cost-pie-wrap">'
-        f'<img class="cost-pie-img" src="data:image/svg+xml,{quote(svg)}" alt="花费构成饼图"/>'
-        f'<div class="cost-pie-total">单次合计 <b>¥{total:.0f}</b></div>'
-        "</div>"
-    )
-
-
-def cost_pie_chart(elec: float, service: float, parking: float) -> Pie:
+def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
     data = [
-        ("电费", round(elec)),
-        ("服务费", round(service)),
-        ("停车费", round(parking)),
+        {"value": round(elec), "name": "电费", "itemStyle": {"color": "#2f6fb0"}},
+        {"value": round(service), "name": "服务费", "itemStyle": {"color": "#48a37b"}},
+        {"value": round(parking), "name": "停车费", "itemStyle": {"color": "#e0a33a"}},
     ]
-    chart = Pie(
-        init_opts=opts.InitOpts(
-            width="100%",
-            height="330px",
-            bg_color="transparent",
-        )
-    )
-    chart.add(
-        "",
-        data,
-        radius=["24%", "62%"],
-        center=["50%", "52%"],
-        label_opts=opts.LabelOpts(
-            is_show=True,
-            position="outside",
-            formatter="{b}: ¥{c} ({d}%)",
-            font_size=12,
-            font_weight="bold",
-            color="#1f4e79",
-        ),
-    )
-    chart.set_colors(["#2f6fb0", "#48a37b", "#e0a33a"])
-    chart.set_global_opts(
-        legend_opts=opts.LegendOpts(is_show=False),
-        tooltip_opts=opts.TooltipOpts(
-            trigger="item",
-            formatter="{b}<br/>¥{c}（{d}%）",
-        ),
-    )
-    chart.set_series_opts(
-        itemstyle_opts=opts.ItemStyleOpts(
-            border_color="#ffffff",
-            border_width=2,
-        ),
-    )
-    series = chart.options["series"][0]
-    series["labelLine"] = {
-        "show": True,
-        "length": 16,
-        "length2": 18,
-        "lineStyle": {"width": 1, "color": "#7e8b85"},
+    return {
+        "backgroundColor": "transparent",
+        "animationDuration": 900,
+        "animationEasing": "cubicOut",
+        "animationType": "scale",
+        "tooltip": {
+            "trigger": "item",
+            "formatter": "{b}<br/>¥{c}（{d}%）",
+        },
+        "series": [
+            {
+                "type": "pie",
+                "radius": ["24%", "62%"],
+                "center": ["50%", "52%"],
+                "avoidLabelOverlap": True,
+                "itemStyle": {
+                    "borderColor": "#ffffff",
+                    "borderWidth": 2,
+                    "borderRadius": 6,
+                },
+                "label": {
+                    "show": True,
+                    "position": "outside",
+                    "formatter": "{b}: ¥{c} ({d}%)",
+                    "color": "#1f4e79",
+                    "fontSize": 12,
+                    "fontWeight": 600,
+                },
+                "labelLine": {
+                    "show": True,
+                    "length": 16,
+                    "length2": 18,
+                    "lineStyle": {"width": 1, "color": "#7e8b85"},
+                },
+                "data": data,
+            }
+        ],
     }
-    series["avoidLabelOverlap"] = True
-    chart.options["animationDuration"] = 900
-    chart.options["animationEasing"] = "cubicOut"
-    return chart
 
 
 def make_map(data: pd.DataFrame) -> str:
@@ -1564,12 +1491,15 @@ def page_station_bill() -> None:
 
     with st.container(border=True):
         st.subheader("花费明细")
-        pie = cost_pie_chart(
-            row["price_elec"] * 60,
-            row["price_service"] * 60,
-            row["price_parking"],
+        st.echarts_chart(
+            echarts_pie_option(
+                row["price_elec"] * 60,
+                row["price_service"] * 60,
+                row["price_parking"],
+            ),
+            height=340,
+            alt="花费构成：电费、服务费、停车费的金额与占比",
         )
-        components.html(pie.render_embed(), height=340, scrolling=False)
         st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
 
     with st.container(border=True):
