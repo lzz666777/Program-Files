@@ -509,15 +509,6 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
 }
 .bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
 .bill-echarts { width: 100%; height: 330px; }
-[data-testid="stElementContainer"]:has(canvas) {
-  transform-origin: center;
-  animation: chartIn 1.5s cubic-bezier(.22,1,.36,1) both;
-}
-@keyframes chartIn {
-  0% { opacity: 0; transform: scale(.72) rotate(-4deg); }
-  65% { opacity: 1; transform: scale(1.03) rotate(1deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
-}
 .bill-preset {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -824,10 +815,6 @@ def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
         {"value": round(parking), "name": "停车费"},
     ]
     return {
-        "animation": True,
-        "animationDuration": 1600,
-        "animationEasing": "cubicOut",
-        "animationType": "expansion",
         "title": {
             "text": "花费明细",
             "subtext": "按充 60 度、停车 1 小时估算",
@@ -863,7 +850,6 @@ def echarts_pie_html(elec: float, service: float, parking: float) -> str:
         '</head><body><div id="pie"></div><script>'
         'var chart=echarts.init(document.getElementById("pie"),null,{renderer:"canvas"});'
         'chart.setOption(' + option + ');'
-        'setTimeout(function(){chart.clear();chart.setOption(' + option + ');},500);'
         'window.addEventListener("resize",function(){chart.resize();});'
         '</script></body></html>'
     )
@@ -1025,10 +1011,6 @@ function renderInlinePie(s) {{
   const el = doc.getElementById('bill-echarts-pie');
   if (!el) return;
   const option = {{
-    animation: true,
-    animationDuration: 1600,
-    animationEasing: 'cubicOut',
-    animationType: 'expansion',
     title: {{
       text: '花费明细',
       subtext: '按充 60 度、停车 1 小时估算',
