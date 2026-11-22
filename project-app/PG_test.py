@@ -959,43 +959,38 @@ function showBillInline(s) {{
     const rightBtn = doc.querySelector('#panel-controls button[data-side="right"]');
     if (rightBtn) rightBtn.classList.add('active');
 
-    let content = doc.getElementById('bill-content');
-    if (content && content.dataset.page !== p.location.pathname) {{
-      closeBillContent(doc);
-      content = null;
+    closeBillContent(doc);
+    let content = null;
+    content = doc.createElement('div');
+    content.id = 'bill-content';
+    main.appendChild(content);
+    content.__dshHidden = [];
+    const mapEl = main.querySelector('.st-key-map_bg');
+    if (mapEl) {{
+      let node = mapEl;
+      while (node && node !== main) {{
+        const parent = node.parentElement;
+        [...parent.children].forEach((ch) => {{
+          if (ch === node || ch === content || ch.contains(mapEl) || ch.__dshHiddenFlag) return;
+          ch.__dshOldDisplay = ch.style.display;
+          ch.style.display = 'none';
+          ch.__dshHiddenFlag = true;
+          content.__dshHidden.push(ch);
+        }});
+        node = parent;
+      }}
     }}
-    if (!content) {{
-      content = doc.createElement('div');
-      content.id = 'bill-content';
-      main.appendChild(content);
-      content.__dshHidden = [];
-      const mapEl = main.querySelector('.st-key-map_bg');
-      if (mapEl) {{
-        let node = mapEl;
-        while (node && node !== main) {{
-          const parent = node.parentElement;
-          [...parent.children].forEach((ch) => {{
-            if (ch === node || ch === content || ch.contains(mapEl) || ch.__dshHiddenFlag) return;
-            ch.__dshOldDisplay = ch.style.display;
-            ch.style.display = 'none';
-            ch.__dshHiddenFlag = true;
-            content.__dshHidden.push(ch);
-          }});
-          node = parent;
+    content.addEventListener('click', (e) => {{
+      if (e.target.closest('[data-close]')) {{
+        closeBillContent(doc);
+      }} else if (e.target.closest('[data-more]')) {{
+        const more = content.querySelector('.bill-more');
+        if (more) {{
+          more.hidden = !more.hidden;
+          e.target.textContent = more.hidden ? '显示更多' : '收起';
         }}
       }}
-      content.addEventListener('click', (e) => {{
-        if (e.target.closest('[data-close]')) {{
-          closeBillContent(doc);
-        }} else if (e.target.closest('[data-more]')) {{
-          const more = content.querySelector('.bill-more');
-          if (more) {{
-            more.hidden = !more.hidden;
-            e.target.textContent = more.hidden ? '显示更多' : '收起';
-          }}
-        }}
-      }});
-    }}
+    }});
     content.dataset.page = p.location.pathname;
 
     if (!p.__dshBillWatch) {{
@@ -1231,17 +1226,14 @@ stations.forEach(s => {{
     try {{
       const p = window.parent;
       const path = p.location.pathname;
-      if (path.includes('page_sandbox') || path.includes('page_feedback')) {{
-        const a = p.document.createElement('a');
-        a.href = path + '?station=' + encodeURIComponent(s.name);
-        a.style.display = 'none';
-        p.document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 100);
+      if (path.includes('page_sandbox')) {{
+        showSandboxInline(s);
+      }} else if (path.includes('page_feedback')) {{
+        showFeedbackInline(s);
       }} else {{
         showBillInline(s);
-        setTimeout(() => marker.closePopup(), 30);
       }}
+      setTimeout(() => marker.closePopup(), 30);
     }} catch (e) {{}}
   }});
 }});
