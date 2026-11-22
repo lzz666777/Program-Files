@@ -536,6 +536,17 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   width: 100%;
   height: auto;
   display: block;
+  transform-origin: center;
+  animation: piePop .72s cubic-bezier(.22,1,.36,1) both;
+}
+.cost-pie-svg {
+  transform-origin: center;
+  animation: piePop .72s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes piePop {
+  0% { opacity: 0; transform: scale(.55) rotate(-7deg); }
+  68% { opacity: 1; transform: scale(1.045) rotate(1.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 .cost-pie-total {
   text-align: center;
