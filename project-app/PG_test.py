@@ -1021,10 +1021,23 @@ function renderInlinePie(s) {{
   }};
   const draw = () => {{
     if (!p.echarts || !el.isConnected) return;
+    if (!el.clientWidth) {{
+      setTimeout(draw, 80);
+      return;
+    }}
     if (el.__chart) el.__chart.dispose();
     const chart = p.echarts.init(el, null, {{ renderer: 'canvas' }});
     chart.setOption(option);
     el.__chart = chart;
+    setTimeout(() => {{
+      if (el.__chart) el.__chart.resize();
+    }}, 420);
+    if (p.ResizeObserver && !el.__ro) {{
+      el.__ro = new p.ResizeObserver(() => {{
+        if (el.__chart) el.__chart.resize();
+      }});
+      el.__ro.observe(el);
+    }}
   }};
   if (p.echarts) {{
     draw();
