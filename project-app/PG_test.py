@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -1712,7 +1714,34 @@ def feedback_connection() -> sqlite3.Connection:
     return conn
 
 
+def supabase_config() -> tuple[str, str] | None:
+    try:
+        cfg = st.secrets["supabase"]
+        url = str(cfg["url"]).rstrip("/")
+        key = str(cfg["key"])
+        if url and key:
+            return url, key
+    except Exception:
+        pass
+    return None
+
+
 def load_feedback(station: str) -> list[list[str]]:
+    cfg = supabase_config()
+    if cfg:
+        base, key = cfg
+        query = (
+            f"{base}/rest/v1/feedback?station=eq.{urllib.parse.quote(station)}"
+            "&select=kind,content,evidence,created_at&order=id.desc"
+        )
+        req = urllib.request.Request(
+            query,
+            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        return [[r["kind"], r["content"], r["evidence"], r["created_at"]] for r in data]
+
     conn = feedback_connection()
     try:
         cur = conn.execute(
@@ -1726,6 +1755,34 @@ def load_feedback(station: str) -> list[list[str]]:
 
 
 def save_feedback(station: str, kind: str, content: str, evidence: str) -> None:
+    cfg = supabase_config()
+    if cfg:
+        base, key = cfg
+        body = json.dumps(
+            {
+                "station": station,
+                "kind": kind,
+                "content": content,
+                "evidence": evidence,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        req = urllib.request.Request(
+            f"{base}/rest/v1/feedback",
+            data=body,
+            method="POST",
+            headers={
+                "apikey": key,
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        return
+
     conn = feedback_connection()
     try:
         conn.execute(
