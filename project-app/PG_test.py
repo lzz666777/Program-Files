@@ -748,6 +748,9 @@ def make_map(data: pd.DataFrame) -> str:
                 "lat": lat,
                 "lng": lng,
                 "piles": int(row["piles"]),
+                "queue": float(row["queue"]),
+                "fake_idle": float(row["fake_idle"]),
+                "occupancy": float(row["occupancy"]),
                 "deviation": float(row["price_deviation"]),
                 "platform": float(row["platform_price"]),
                 "field": float(row["field_price"]),
@@ -998,6 +1001,69 @@ function showBillInline(s) {{
   }} catch (e) {{}}
 }}
 
+function showSandboxInline(s) {{
+  showBillInline(s);
+  const doc = window.parent.document;
+  const c = doc.getElementById('bill-content');
+  if (!c) return;
+  const baseWait = s.queue;
+  const baseFake = s.fake_idle;
+  const fee = 0.3;
+  const graceEffect = Math.max(0, 30 - 30) * 0.0008;
+  const newFake = Math.max(0.02, baseFake - fee * 0.12 - 0.04 - graceEffect);
+  const newWait = Math.max(2, baseWait * (1 - fee * 0.3) - 3);
+  const eff = s.piles * (1 - newFake);
+  const maxWait = Math.max(baseWait, newWait, 1);
+  const maxFake = Math.max(baseFake, newFake, 0.01);
+  const mcard = (label, value) =>
+    '<div class="bill-metric"><span>' + label + '</span><b>' + value + '</b></div>';
+  const bars = (title, a, b, max, color, unit) =>
+    '<div class="bill-card"><span>' + title + '</span><div class="cmp-chart">' +
+      '<div class="cmp-col"><div class="cmp-value">' + a.toFixed(unit === '%' ? 1 : 1) + (unit === '%' ? '%' : ' 分钟') + '</div>' +
+        '<div class="cmp-track"><div class="cmp-bar base" style="height:' + Math.max(8, a / max * 100).toFixed(1) + '%;animation-delay:.05s"></div></div><div class="cmp-label">现状</div></div>' +
+      '<div class="cmp-col"><div class="cmp-value">' + b.toFixed(unit === '%' ? 1 : 1) + (unit === '%' ? '%' : ' 分钟') + '</div>' +
+        '<div class="cmp-track"><div class="cmp-bar better" style="height:' + Math.max(8, b / max * 100).toFixed(1) + '%;background:linear-gradient(180deg,' + color + 'bb,' + color + ');animation-delay:.15s"></div></div><div class="cmp-label">方案</div></div>' +
+    '</div></div>';
+  c.innerHTML =
+    '<div class="bill-head"><h2>治理沙盘</h2><button class="bill-close" data-close>关闭</button></div>' +
+    '<div class="bill-name">' + s.name + '</div>' +
+    '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
+    '<div class="bill-grid">' +
+      mcard('平均等待（现状）', baseWait.toFixed(1) + ' 分钟') +
+      mcard('平均等待（方案）', newWait.toFixed(1) + ' 分钟') +
+      mcard('空闲误判率', (newFake * 100).toFixed(1) + '%') +
+      mcard('有效桩数', eff.toFixed(0)) +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      bars('等待时间对比', baseWait, newWait, maxWait, '#2f6fb0', '') +
+      bars('空闲误判率对比', baseFake * 100, newFake * 100, maxFake * 100, '#23915f', '%') +
+    '</div>' +
+    '<div class="bill-card"><span>方案预设</span><div class="bill-row">免费宽限 30 分钟 · 超时占用费 0.3 元/分钟 · 单次封顶 50 元 · 启用预约锁位</div></div>';
+}}
+
+function showFeedbackInline(s) {{
+  showBillInline(s);
+  const doc = window.parent.document;
+  const c = doc.getElementById('bill-content');
+  if (!c) return;
+  const items = (s.feedback_items || []).map((f) =>
+    '<div class="bill-fb-item"><div class="bill-fb-text">' + f.text + '</div><div class="bill-fb-time">' + f.time + '</div></div>'
+  ).join('');
+  const mcard = (label, value) =>
+    '<div class="bill-metric"><span>' + label + '</span><b>' + value + '</b></div>';
+  c.innerHTML =
+    '<div class="bill-head"><h2>反馈中心</h2><button class="bill-close" data-close>关闭</button></div>' +
+    '<div class="bill-name">' + s.name + '</div>' +
+    '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
+    '<div class="bill-grid">' +
+      mcard('反馈总数', String(s.feedback)) +
+      mcard('价格类', '1') +
+      mcard('待核验', s.evidence === 'A' ? '1' : '2') +
+      mcard('证据等级', s.evidence) +
+    '</div>' +
+    '<div class="bill-card"><span>用户反馈</span><div class="bill-fb">' + items + '</div></div>';
+}}
+
 map.on('movestart zoomstart', collapsePanels);
 
 
@@ -1027,17 +1093,14 @@ stations.forEach(s => {{
     try {{
       const p = window.parent;
       const path = p.location.pathname;
-      if (path.includes('page_feedback') || path.includes('page_sandbox')) {{
-        const a = p.document.createElement('a');
-        a.href = path + '?station=' + encodeURIComponent(s.name);
-        a.style.display = 'none';
-        p.document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 100);
+      if (path.includes('page_sandbox')) {{
+        showSandboxInline(s);
+      }} else if (path.includes('page_feedback')) {{
+        showFeedbackInline(s);
       }} else {{
         showBillInline(s);
-        setTimeout(() => marker.closePopup(), 30);
       }}
+      setTimeout(() => marker.closePopup(), 30);
     }} catch (e) {{}}
   }});
 }});
