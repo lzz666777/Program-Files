@@ -1859,9 +1859,15 @@ def page_feedback() -> None:
         if not content.strip():
             st.error("写点具体问题，别只提交空内容。")
         else:
-            save_feedback(station, kind, content.strip(), evidence[0])
-            st.toast("反馈已保存，刷新后仍保留", icon="✅")
-            st.rerun()
+            try:
+                with st.spinner("正在保存反馈..."):
+                    save_feedback(station, kind, content.strip(), evidence[0])
+            except Exception as exc:
+                st.error(f"反馈保存失败：{exc}")
+            else:
+                st.success("反馈已保存，刷新后仍保留。")
+                st.toast("反馈已保存", icon="✅")
+                rows = sample_rows + load_feedback(station)
 
     with st.container(border=True):
         st.subheader(f"用户反馈（{len(rows)} 条）")
