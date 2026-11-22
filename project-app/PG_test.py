@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+from urllib.parse import quote
 
 import pandas as pd
 import streamlit as st
@@ -520,6 +521,29 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
 }
 .bill-preset small { display: block; font-size: 11px; color: #7e8b85; }
 .bill-preset b { font-size: 15px; color: #1f4e79; }
+.cost-pie-wrap {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+.cost-pie-svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 560 / 340;
+  display: block;
+}
+.cost-pie-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.cost-pie-total {
+  text-align: center;
+  font-size: 13px;
+  color: #667;
+  margin-top: 2px;
+}
+.cost-pie-total b { font-size: 20px; color: #1f4e79; }
 .sb-controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -772,30 +796,65 @@ def comparison_chart(
 
 
 def cost_pie_html(elec: float, service: float, parking: float) -> str:
+    """带引导线与标签的花费饼图。"""
     total = max(1.0, elec + service + parking)
-    p1 = elec / total * 100
-    p2 = (elec + service) / total * 100
-    p3 = 100 - p2
-    pie_bg = (
-        f"conic-gradient(#2f6fb0 0 {p1:.1f}%, #48a37b {p1:.1f}% {p2:.1f}%, "
-        f"#e0a33a {p2:.1f}% 100%)"
+    items = [
+        ("电费", elec, "#2f6fb0"),
+        ("服务费", service, "#48a37b"),
+        ("停车费", parking, "#e0a33a"),
+    ]
+    cx, cy, radius = 280.0, 168.0, 112.0
+    angle = -90.0
+    paths = []
+    leaders = []
+    labels = []
+    for name, value, color in items:
+        fraction = value / total
+        sweep = fraction * 360.0
+        mid = math.radians(angle + sweep / 2.0)
+        ox = math.cos(mid) * 4
+        oy = math.sin(mid) * 4
+        a1 = math.radians(angle)
+        a2 = math.radians(angle + sweep)
+        x1 = cx + ox + radius * math.cos(a1)
+        y1 = cy + oy + radius * math.sin(a1)
+        x2 = cx + ox + radius * math.cos(a2)
+        y2 = cy + oy + radius * math.sin(a2)
+        large = 1 if sweep > 180 else 0
+        paths.append(
+            f'<path d="M {cx + ox:.1f} {cy + oy:.1f} L {x1:.1f} {y1:.1f} '
+            f'A {radius:.0f} {radius:.0f} 0 {large} 1 {x2:.1f} {y2:.1f} Z" '
+            f'fill="{color}" stroke="#ffffff" stroke-width="2"/>'
+        )
+        edge_x = cx + ox + math.cos(mid) * (radius + 4)
+        edge_y = cy + oy + math.sin(mid) * (radius + 4)
+        lx = cx + ox + math.cos(mid) * (radius + 30)
+        ly = cy + oy + math.sin(mid) * (radius + 30)
+        anchor = "start" if math.cos(mid) >= 0 else "end"
+        tx = lx + (10 if anchor == "start" else -10)
+        leaders.append(
+            f'<polyline points="{edge_x:.1f},{edge_y:.1f} {lx:.1f},{ly:.1f} {tx:.1f},{ly:.1f}" '
+            f'fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
+        )
+        labels.append(
+            f'<text x="{tx:.1f}" y="{ly + 4:.1f}" text-anchor="{anchor}" '
+            f'font-size="14" fill="#1f4e79" font-weight="600">'
+            f'{name} ¥{value:.0f} · {fraction * 100:.0f}%</text>'
+        )
+        angle += sweep
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 340" width="560" height="340">'
+        + "".join(paths)
+        + "".join(leaders)
+        + "".join(labels)
+        + "</svg>"
     )
-    return f"""
-<div class="bill-cost">
-  <div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:{pie_bg}"></div></div>
-  <svg class="pie-links" viewBox="0 0 34 112" preserveAspectRatio="none">
-    <line x1="0" y1="48" x2="32" y2="22" stroke="#2f6fb0" stroke-width="1" opacity=".55"/>
-    <line x1="0" y1="58" x2="32" y2="56" stroke="#48a37b" stroke-width="1" opacity=".55"/>
-    <line x1="0" y1="70" x2="32" y2="94" stroke="#e0a33a" stroke-width="1" opacity=".55"/>
-  </svg>
-  <div class="bill-legend">
-    <div><i style="background:#2f6fb0"></i>电费 ¥{elec:.0f} <b>{p1:.0f}%</b></div>
-    <div><i style="background:#48a37b"></i>服务费 ¥{service:.0f} <b>{p2 - p1:.0f}%</b></div>
-    <div><i style="background:#e0a33a"></i>停车费 ¥{parking:.0f} <b>{p3:.0f}%</b></div>
-    <div class="bill-total">单次合计 <b>¥{total:.0f}</b></div>
-  </div>
-</div>
-"""
+    return (
+        '<div class="cost-pie-wrap">'
+        f'<img class="cost-pie-img" src="data:image/svg+xml,{quote(svg)}" alt="花费构成饼图"/>'
+        f'<div class="cost-pie-total">单次合计 <b>¥{total:.0f}</b></div>'
+        "</div>"
+    )
 
 
 def make_map(data: pd.DataFrame) -> str:
@@ -948,6 +1007,55 @@ function closeBillContent(doc) {{
   c.remove();
 }}
 
+function pieSvg(s) {{
+  const elec = s.elec * 60;
+  const service = s.service * 60;
+  const parking = s.parking;
+  const total = Math.max(1, elec + service + parking);
+  const items = [
+    ['电费', elec, '#2f6fb0'],
+    ['服务费', service, '#48a37b'],
+    ['停车费', parking, '#e0a33a'],
+  ];
+  const cx = 280, cy = 168, radius = 112;
+  let angle = -90;
+  let paths = '', leaders = '', labels = '';
+  items.forEach(([name, value, color]) => {{
+    const fraction = value / total;
+    const sweep = fraction * 360;
+    const mid = (angle + sweep / 2) * Math.PI / 180;
+    const ox = Math.cos(mid) * 4;
+    const oy = Math.sin(mid) * 4;
+    const a1 = angle * Math.PI / 180;
+    const a2 = (angle + sweep) * Math.PI / 180;
+    const x1 = cx + ox + radius * Math.cos(a1);
+    const y1 = cy + oy + radius * Math.sin(a1);
+    const x2 = cx + ox + radius * Math.cos(a2);
+    const y2 = cy + oy + radius * Math.sin(a2);
+    const large = sweep > 180 ? 1 : 0;
+    paths += '<path d="M ' + (cx + ox).toFixed(1) + ' ' + (cy + oy).toFixed(1) +
+      ' L ' + x1.toFixed(1) + ' ' + y1.toFixed(1) +
+      ' A ' + radius + ' ' + radius + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) +
+      ' Z" fill="' + color + '" stroke="#ffffff" stroke-width="2"/>';
+    const edgeX = cx + ox + Math.cos(mid) * (radius + 4);
+    const edgeY = cy + oy + Math.sin(mid) * (radius + 4);
+    const lx = cx + ox + Math.cos(mid) * (radius + 30);
+    const ly = cy + oy + Math.sin(mid) * (radius + 30);
+    const anchor = Math.cos(mid) >= 0 ? 'start' : 'end';
+    const tx = lx + (anchor === 'start' ? 10 : -10);
+    leaders += '<polyline points="' + edgeX.toFixed(1) + ',' + edgeY.toFixed(1) + ' ' +
+      lx.toFixed(1) + ',' + ly.toFixed(1) + ' ' + tx.toFixed(1) + ',' + ly.toFixed(1) +
+      '" fill="none" stroke="' + color + '" stroke-width="1" opacity=".75"/>';
+    labels += '<text x="' + tx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) +
+      '" text-anchor="' + anchor + '" font-size="14" fill="#1f4e79" font-weight="600">' +
+      name + ' ¥' + value.toFixed(0) + ' · ' + (fraction * 100).toFixed(0) + '%</text>';
+    angle += sweep;
+  }});
+  return '<div class="cost-pie-wrap"><svg class="cost-pie-svg" viewBox="0 0 560 340" height="340">' +
+    paths + leaders + labels + '</svg>' +
+    '<div class="cost-pie-total">单次合计 <b>¥' + total.toFixed(0) + '</b></div></div>';
+}}
+
 function showBillInline(s) {{
   try {{
     const p = window.parent;
@@ -1037,22 +1145,7 @@ function showBillInline(s) {{
         card('价格偏差', (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%') +
         card('全成本', '¥' + s.full_cost.toFixed(0)) +
       '</div>' +
-      '<div class="bill-card"><span>花费明细</span>' +
-        '<div class="bill-cost">' +
-          '<div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:' + pieBg + '"></div></div>' +
-          '<svg class="pie-links" viewBox="0 0 34 112" preserveAspectRatio="none">' +
-            '<line x1="0" y1="48" x2="32" y2="22" stroke="#2f6fb0" stroke-width="1" opacity=".55"/>' +
-            '<line x1="0" y1="58" x2="32" y2="56" stroke="#48a37b" stroke-width="1" opacity=".55"/>' +
-            '<line x1="0" y1="70" x2="32" y2="94" stroke="#e0a33a" stroke-width="1" opacity=".55"/>' +
-          '</svg>' +
-          '<div class="bill-legend">' +
-            '<div><i style="background:#2f6fb0"></i>电费 ¥' + elec.toFixed(0) + ' <b>' + p1.toFixed(0) + '%</b></div>' +
-            '<div><i style="background:#48a37b"></i>服务费 ¥' + service.toFixed(0) + ' <b>' + (p2 - p1).toFixed(0) + '%</b></div>' +
-            '<div><i style="background:#e0a33a"></i>停车费 ¥' + parking.toFixed(0) + ' <b>' + p3.toFixed(0) + '%</b></div>' +
-            '<div class="bill-total">单次合计 <b>¥' + total.toFixed(0) + '</b></div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
+      '<div class="bill-card"><span>花费明细</span>' + pieSvg(s) + '</div>' +
       '<div class="bill-card"><span>用户反馈</span>' +
         '<div class="bill-fb">' + firstFb + '<div class="bill-more" hidden>' + restFb + '</div></div>' +
         moreBtn +
