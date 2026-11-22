@@ -16,6 +16,8 @@ from urllib.parse import quote
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from pyecharts import options as opts
+from pyecharts.charts import Pie
 
 st.set_page_config(
     page_title="桩尽其用 · 价格与车位治理",
@@ -868,6 +870,60 @@ def cost_pie_html(elec: float, service: float, parking: float) -> str:
     )
 
 
+def cost_pie_chart(elec: float, service: float, parking: float) -> Pie:
+    data = [
+        ("电费", round(elec)),
+        ("服务费", round(service)),
+        ("停车费", round(parking)),
+    ]
+    chart = Pie(
+        init_opts=opts.InitOpts(
+            width="100%",
+            height="330px",
+            bg_color="transparent",
+        )
+    )
+    chart.add(
+        "",
+        data,
+        radius=["24%", "62%"],
+        center=["50%", "52%"],
+        label_opts=opts.LabelOpts(
+            is_show=True,
+            position="outside",
+            formatter="{b}: ¥{c} ({d}%)",
+            font_size=12,
+            font_weight="bold",
+            color="#1f4e79",
+        ),
+    )
+    chart.set_colors(["#2f6fb0", "#48a37b", "#e0a33a"])
+    chart.set_global_opts(
+        legend_opts=opts.LegendOpts(is_show=False),
+        tooltip_opts=opts.TooltipOpts(
+            trigger="item",
+            formatter="{b}<br/>¥{c}（{d}%）",
+        ),
+    )
+    chart.set_series_opts(
+        itemstyle_opts=opts.ItemStyleOpts(
+            border_color="#ffffff",
+            border_width=2,
+        ),
+    )
+    series = chart.options["series"][0]
+    series["labelLine"] = {
+        "show": True,
+        "length": 16,
+        "length2": 18,
+        "lineStyle": {"width": 1, "color": "#7e8b85"},
+    }
+    series["avoidLabelOverlap"] = True
+    chart.options["animationDuration"] = 900
+    chart.options["animationEasing"] = "cubicOut"
+    return chart
+
+
 def make_map(data: pd.DataFrame) -> str:
     coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
     stations = []
@@ -1508,13 +1564,12 @@ def page_station_bill() -> None:
 
     with st.container(border=True):
         st.subheader("花费明细")
-        st.html(
-            cost_pie_html(
-                row["price_elec"] * 60,
-                row["price_service"] * 60,
-                row["price_parking"],
-            )
+        pie = cost_pie_chart(
+            row["price_elec"] * 60,
+            row["price_service"] * 60,
+            row["price_parking"],
         )
+        components.html(pie.render_embed(), height=340, scrolling=False)
         st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
 
     with st.container(border=True):
