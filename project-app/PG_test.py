@@ -1,4 +1,4 @@
-﻿"""
+"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -853,6 +853,21 @@ def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
     }
 
 
+def echarts_pie_html(elec: float, service: float, parking: float) -> str:
+    option = json.dumps(echarts_pie_option(elec, service, parking), ensure_ascii=False)
+    return (
+        '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"/>'
+        '<style>html,body{height:100%;margin:0;background:transparent;}'
+        '#pie{width:100%;height:330px;}</style>'
+        '<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>'
+        '</head><body><div id="pie"></div><script>'
+        'var chart=echarts.init(document.getElementById("pie"),null,{renderer:"canvas"});'
+        'chart.setOption(' + option + ');'
+        'window.addEventListener("resize",function(){chart.resize();});'
+        '</script></body></html>'
+    )
+
+
 def make_map(data: pd.DataFrame) -> str:
     coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
     stations = []
@@ -1539,14 +1554,14 @@ def page_station_bill() -> None:
         )
 
     with st.container(border=True):
-        st.echarts_chart(
-            echarts_pie_option(
+        components.html(
+            echarts_pie_html(
                 row["price_elec"] * 60,
                 row["price_service"] * 60,
                 row["price_parking"],
             ),
-            height=340,
-            alt="花费构成：电费、服务费、停车费的金额与占比",
+            height=360,
+            scrolling=False,
         )
 
     with st.container(border=True):
