@@ -807,45 +807,31 @@ def comparison_chart(
 
 def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
     data = [
-        {"value": round(elec), "name": "电费", "itemStyle": {"color": "#2f6fb0"}},
-        {"value": round(service), "name": "服务费", "itemStyle": {"color": "#48a37b"}},
-        {"value": round(parking), "name": "停车费", "itemStyle": {"color": "#e0a33a"}},
+        {"value": round(elec), "name": "电费"},
+        {"value": round(service), "name": "服务费"},
+        {"value": round(parking), "name": "停车费"},
     ]
     return {
-        "backgroundColor": "transparent",
-        "animationDuration": 900,
-        "animationEasing": "cubicOut",
-        "animationType": "scale",
-        "tooltip": {
-            "trigger": "item",
-            "formatter": "{b}<br/>¥{c}（{d}%）",
+        "title": {
+            "text": "花费明细",
+            "subtext": "按充 60 度、停车 1 小时估算",
+            "left": "center",
         },
+        "tooltip": {"trigger": "item"},
+        "legend": {"orient": "vertical", "left": "left"},
         "series": [
             {
+                "name": "费用构成",
                 "type": "pie",
-                "radius": ["24%", "62%"],
-                "center": ["50%", "52%"],
-                "avoidLabelOverlap": True,
-                "itemStyle": {
-                    "borderColor": "#ffffff",
-                    "borderWidth": 2,
-                    "borderRadius": 6,
-                },
-                "label": {
-                    "show": True,
-                    "position": "outside",
-                    "formatter": "{b}: ¥{c} ({d}%)",
-                    "color": "#1f4e79",
-                    "fontSize": 12,
-                    "fontWeight": 600,
-                },
-                "labelLine": {
-                    "show": True,
-                    "length": 16,
-                    "length2": 18,
-                    "lineStyle": {"width": 1, "color": "#7e8b85"},
-                },
+                "radius": "50%",
                 "data": data,
+                "emphasis": {
+                    "itemStyle": {
+                        "shadowBlur": 10,
+                        "shadowOffsetX": 0,
+                        "shadowColor": "rgba(0, 0, 0, 0.5)",
+                    }
+                },
             }
         ],
     }
@@ -1490,7 +1476,6 @@ def page_station_bill() -> None:
         )
 
     with st.container(border=True):
-        st.subheader("花费明细")
         st.echarts_chart(
             echarts_pie_option(
                 row["price_elec"] * 60,
@@ -1500,7 +1485,6 @@ def page_station_bill() -> None:
             height=340,
             alt="花费构成：电费、服务费、停车费的金额与占比",
         )
-        st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
 
     with st.container(border=True):
         st.subheader("价格核对")
