@@ -221,6 +221,7 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   background: linear-gradient(180deg, rgba(250,253,251,0.92), rgba(247,251,249,0.86));
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  border-radius: 30px;
 }
 .bill-head { display: flex; justify-content: space-between; align-items: center; }
 #bill-content h2 { margin: 0; font-size: 30px; }
