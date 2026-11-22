@@ -1231,14 +1231,17 @@ stations.forEach(s => {{
     try {{
       const p = window.parent;
       const path = p.location.pathname;
-      if (path.includes('page_sandbox')) {{
-        showSandboxInline(s);
-      }} else if (path.includes('page_feedback')) {{
-        showFeedbackInline(s);
+      if (path.includes('page_sandbox') || path.includes('page_feedback')) {{
+        const a = p.document.createElement('a');
+        a.href = path + '?station=' + encodeURIComponent(s.name);
+        a.style.display = 'none';
+        p.document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 100);
       }} else {{
         showBillInline(s);
+        setTimeout(() => marker.closePopup(), 30);
       }}
-      setTimeout(() => marker.closePopup(), 30);
     }} catch (e) {{}}
   }});
 }});
