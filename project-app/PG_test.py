@@ -1,4 +1,4 @@
-﻿"""
+"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -509,6 +509,15 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
 }
 .bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
 .bill-echarts { width: 100%; height: 330px; }
+[data-testid="stElementContainer"]:has(canvas) {
+  transform-origin: center;
+  animation: chartIn .9s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes chartIn {
+  0% { opacity: 0; transform: scale(.72) rotate(-4deg); }
+  65% { opacity: 1; transform: scale(1.03) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
 .bill-preset {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1273,7 +1282,8 @@ function showFeedbackInline(s) {{
   const doc = window.parent.document;
   const c = doc.getElementById('bill-content');
   if (!c) return;
-  const items = (s.feedback_items || []).map((f) =>
+  const feedbackItems = s.feedback_items || [];
+  const items = feedbackItems.map((f) =>
     '<div class="bill-fb-item"><div class="bill-fb-text">' + f.text + '</div><div class="bill-fb-time">' + f.time + '</div></div>'
   ).join('');
   const mcard = (label, value) =>
@@ -1295,6 +1305,8 @@ function showFeedbackInline(s) {{
         '<textarea id="fb-content-inline" placeholder="例如：平台显示 1.20，现场扫码变成 1.65"></textarea>' +
         '<button type="button" id="fb-submit-inline">提交反馈</button>' +
       '</div>' +
+    '</div>' +
+    '<div class="bill-card"><span>用户反馈（' + feedbackItems.length + ' 条）</span>' +
       '<div class="bill-fb" id="fb-inline-list">' + items + '</div>' +
     '</div>';
 
