@@ -1,4 +1,4 @@
-﻿"""
+"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -520,6 +520,26 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
 }
 .bill-preset small { display: block; font-size: 11px; color: #7e8b85; }
 .bill-preset b { font-size: 15px; color: #1f4e79; }
+.sb-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-top: 10px;
+}
+.sb-controls label { font-size: 12px; color: #58665f; }
+.sb-controls label b { float: right; color: #1f4e79; }
+.sb-controls input[type="range"] {
+  width: 100%;
+  margin-top: 6px;
+  accent-color: #1f4e79;
+}
+.sb-controls .sb-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #34443f;
+}
 .fb-inline-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1052,42 +1072,81 @@ function showSandboxInline(s) {{
   if (!c) return;
   const baseWait = s.queue;
   const baseFake = s.fake_idle;
-  const fee = 0.3;
-  const graceEffect = Math.max(0, 30 - 30) * 0.0008;
-  const newFake = Math.max(0.02, baseFake - fee * 0.12 - 0.04 - graceEffect);
-  const newWait = Math.max(2, baseWait * (1 - fee * 0.3) - 3);
-  const eff = s.piles * (1 - newFake);
-  const maxWait = Math.max(baseWait, newWait, 1);
-  const maxFake = Math.max(baseFake, newFake, 0.01);
-  const mcard = (label, value) =>
-    '<div class="bill-metric"><span>' + label + '</span><b>' + value + '</b></div>';
-  const bars = (title, a, b, max, color, unit) =>
-    '<div class="bill-card"><span>' + title + '</span><div class="cmp-chart">' +
-      '<div class="cmp-col"><div class="cmp-value">' + a.toFixed(unit === '%' ? 1 : 1) + (unit === '%' ? '%' : ' 分钟') + '</div>' +
-        '<div class="cmp-track"><div class="cmp-bar base" style="height:' + Math.max(8, a / max * 100).toFixed(1) + '%;animation-delay:.05s"></div></div><div class="cmp-label">现状</div></div>' +
-      '<div class="cmp-col"><div class="cmp-value">' + b.toFixed(unit === '%' ? 1 : 1) + (unit === '%' ? '%' : ' 分钟') + '</div>' +
-        '<div class="cmp-track"><div class="cmp-bar better" style="height:' + Math.max(8, b / max * 100).toFixed(1) + '%;background:linear-gradient(180deg,' + color + 'bb,' + color + ');animation-delay:.15s"></div></div><div class="cmp-label">方案</div></div>' +
-    '</div></div>';
+  const piles = s.piles;
+
   c.innerHTML =
     '<div class="bill-head"><h2>治理沙盘</h2><button class="bill-close" data-close>关闭</button></div>' +
     '<div class="bill-name">' + s.name + '</div>' +
     '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
     '<div class="bill-grid">' +
-      mcard('平均等待（现状）', baseWait.toFixed(1) + ' 分钟') +
-      mcard('平均等待（方案）', newWait.toFixed(1) + ' 分钟') +
-      mcard('空闲误判率', (newFake * 100).toFixed(1) + '%') +
-      mcard('有效桩数', eff.toFixed(0)) +
+      '<div class="bill-metric"><span>平均等待（现状）</span><b id="sb-wait-base">' + baseWait.toFixed(1) + ' 分钟</b></div>' +
+      '<div class="bill-metric"><span>平均等待（方案）</span><b id="sb-wait-new">—</b></div>' +
+      '<div class="bill-metric"><span>空闲误判率</span><b id="sb-fake-new">—</b></div>' +
+      '<div class="bill-metric"><span>有效桩数</span><b id="sb-eff">—</b></div>' +
     '</div>' +
+    '<div class="bill-card"><span>方案控制台</span><div class="sb-controls">' +
+      '<label>免费宽限 <b id="sb-grace-v">30 分钟</b><input id="sb-grace" type="range" min="0" max="60" step="5" value="30"></label>' +
+      '<label>超时占用费 <b id="sb-fee-v">0.3 元/分钟</b><input id="sb-fee" type="range" min="0.1" max="2" step="0.1" value="0.3"></label>' +
+      '<label>单次封顶 <b id="sb-cap-v">50 元</b><input id="sb-cap" type="range" min="10" max="100" step="10" value="50"></label>' +
+      '<label class="sb-switch"><input id="sb-res" type="checkbox" checked> 启用预约锁位</label>' +
+    '</div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      bars('等待时间对比', baseWait, newWait, maxWait, '#2f6fb0', '') +
-      bars('空闲误判率对比', baseFake * 100, newFake * 100, maxFake * 100, '#23915f', '%') +
+      '<div class="bill-card"><span>等待时间对比</span><div class="cmp-chart">' +
+        '<div class="cmp-col"><div class="cmp-value" id="sb-wait-base-v">' + baseWait.toFixed(1) + ' 分钟</div>' +
+          '<div class="cmp-track"><div class="cmp-bar base" id="sb-wait-base-bar" style="height:100%;animation-delay:.05s"></div></div><div class="cmp-label">现状</div></div>' +
+        '<div class="cmp-col"><div class="cmp-value" id="sb-wait-plan-v">—</div>' +
+          '<div class="cmp-track"><div class="cmp-bar better" id="sb-wait-plan-bar" style="height:8%;background:linear-gradient(180deg,#5aa0e0,#2f6fb0);animation-delay:.15s"></div></div><div class="cmp-label">方案</div></div>' +
+      '</div></div>' +
+      '<div class="bill-card"><span>空闲误判率对比</span><div class="cmp-chart">' +
+        '<div class="cmp-col"><div class="cmp-value" id="sb-fake-base-v">' + (baseFake * 100).toFixed(1) + '%</div>' +
+          '<div class="cmp-track"><div class="cmp-bar base" id="sb-fake-base-bar" style="height:100%;animation-delay:.05s"></div></div><div class="cmp-label">现状</div></div>' +
+        '<div class="cmp-col"><div class="cmp-value" id="sb-fake-plan-v">—</div>' +
+          '<div class="cmp-track"><div class="cmp-bar better" id="sb-fake-plan-bar" style="height:8%;background:linear-gradient(180deg,#48a37b,#23915f);animation-delay:.15s"></div></div><div class="cmp-label">方案</div></div>' +
+      '</div></div>' +
     '</div>' +
     '<div class="bill-card"><span>方案预设</span><div class="bill-preset">' +
-      '<div><small>免费宽限</small><b>30 分钟</b></div>' +
-      '<div><small>超时占用费</small><b>0.3 元/分钟</b></div>' +
-      '<div><small>单次封顶</small><b>50 元</b></div>' +
-      '<div><small>预约锁位</small><b>开启</b></div>' +
+      '<div><small>免费宽限</small><b id="sb-p-grace">30 分钟</b></div>' +
+      '<div><small>超时占用费</small><b id="sb-p-fee">0.3 元/分钟</b></div>' +
+      '<div><small>单次封顶</small><b id="sb-p-cap">50 元</b></div>' +
+      '<div><small>预约锁位</small><b id="sb-p-res">开启</b></div>' +
+      '<div><small>估算占用费收入/日</small><b id="sb-p-rev">—</b></div>' +
     '</div></div>';
+
+  const $ = (id) => c.querySelector('#' + id);
+  const recalc = () => {{
+    const grace = Number($('sb-grace').value);
+    const fee = Number($('sb-fee').value);
+    const cap = Number($('sb-cap').value);
+    const reservation = $('sb-res').checked;
+    const graceEffect = Math.max(0, 30 - grace) * 0.0008;
+    const newFake = Math.max(0.02, baseFake - fee * 0.12 - (reservation ? 0.04 : 0) - graceEffect);
+    const newWait = Math.max(2, baseWait * (1 - fee * 0.3) - (reservation ? 3 : 0) - Math.max(0, 30 - grace) * 0.03);
+    const eff = piles * (1 - newFake);
+    const events = Math.max(0, (baseFake - newFake) * piles * 8);
+    const revenue = Math.min(cap, fee * 60) * events;
+    const maxWait = Math.max(baseWait, newWait, 1);
+    const maxFake = Math.max(baseFake, newFake, 0.01);
+
+    $('sb-wait-new').textContent = newWait.toFixed(1) + ' 分钟';
+    $('sb-fake-new').textContent = (newFake * 100).toFixed(1) + '%';
+    $('sb-eff').textContent = eff.toFixed(0);
+    $('sb-wait-plan-v').textContent = newWait.toFixed(1) + ' 分钟';
+    $('sb-fake-plan-v').textContent = (newFake * 100).toFixed(1) + '%';
+    $('sb-wait-plan-bar').style.height = Math.max(8, newWait / maxWait * 100).toFixed(1) + '%';
+    $('sb-wait-base-bar').style.height = Math.max(8, baseWait / maxWait * 100).toFixed(1) + '%';
+    $('sb-fake-plan-bar').style.height = Math.max(8, newFake / maxFake * 100).toFixed(1) + '%';
+    $('sb-fake-base-bar').style.height = Math.max(8, baseFake / maxFake * 100).toFixed(1) + '%';
+    $('sb-grace-v').textContent = grace + ' 分钟';
+    $('sb-fee-v').textContent = fee.toFixed(1) + ' 元/分钟';
+    $('sb-cap-v').textContent = cap + ' 元';
+    $('sb-p-grace').textContent = grace + ' 分钟';
+    $('sb-p-fee').textContent = fee.toFixed(1) + ' 元/分钟';
+    $('sb-p-cap').textContent = cap + ' 元';
+    $('sb-p-res').textContent = reservation ? '开启' : '关闭';
+    $('sb-p-rev').textContent = '¥' + revenue.toFixed(0);
+  }};
+  c.querySelectorAll('input').forEach((el) => el.addEventListener('input', recalc));
+  recalc();
 }}
 
 function showFeedbackInline(s) {{
