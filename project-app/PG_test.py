@@ -215,20 +215,20 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   padding: 72px 26px 40px;
   background: transparent;
 }
-#bill-content .bill-head { display: flex; justify-content: space-between; align-items: center; }
+.bill-head { display: flex; justify-content: space-between; align-items: center; }
 #bill-content h2 { margin: 0; font-size: 30px; }
-#bill-content .bill-close {
+.bill-close {
   border: 0;
   background: rgba(255,255,255,0.72);
   border-radius: 999px;
   padding: 6px 12px;
   cursor: pointer;
 }
-#bill-content .bill-name { font-size: 28px; font-weight: 700; margin: 14px 0 4px; }
-#bill-content .bill-sub { color: #556; font-size: 14px; margin-bottom: 14px; }
-#bill-content .bill-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-#bill-content .bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-#bill-content .bill-card {
+.bill-name { font-size: 28px; font-weight: 700; margin: 14px 0 4px; }
+.bill-sub { color: #556; font-size: 14px; margin-bottom: 14px; }
+.bill-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.bill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.bill-card {
   background: rgba(255,255,255,0.68);
   border: 1px solid rgba(255,255,255,0.8);
   border-radius: 18px;
@@ -237,30 +237,38 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   box-shadow: 0 12px 30px rgba(15,40,35,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
   transition: transform .2s ease, box-shadow .2s ease;
 }
-#bill-content .bill-grid .bill-card { margin: 0; }
-#bill-content .bill-cost { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
-#bill-content .pie3d {
-  width: 176px;
-  height: 124px;
+.bill-grid .bill-card { margin: 0; }
+.bill-cost {
+  display: grid;
+  grid-template-columns: 190px 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  width: 100%;
+}
+.pie-links { width: 34px; height: 128px; overflow: visible; }
+.pie3d {
+  width: 190px;
+  height: 140px;
   perspective: 620px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
 }
-#bill-content .pie-side {
+.pie-side {
   position: absolute;
-  top: 16px;
-  width: 138px;
-  height: 138px;
+  top: 18px;
+  width: 158px;
+  height: 158px;
   border-radius: 50%;
   background: rgba(18, 44, 61, 0.35);
   transform: rotateX(58deg) rotateZ(-18deg);
   filter: blur(.4px);
 }
-#bill-content .pie {
-  width: 138px;
-  height: 138px;
+.pie {
+  width: 158px;
+  height: 158px;
   border-radius: 50%;
   position: relative;
   z-index: 2;
@@ -269,7 +277,7 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   box-shadow: 0 20px 24px rgba(15,40,35,0.2), inset 0 0 0 1px rgba(255,255,255,0.55);
   animation: pieIn .7s cubic-bezier(.22,1,.36,1) .08s both;
 }
-#bill-content .pie::after {
+.pie::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -281,38 +289,40 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   65% { opacity: 1; transform: rotateX(58deg) rotateZ(-18deg) scale(1.06); }
   100% { opacity: 1; transform: rotateX(58deg) rotateZ(-18deg) scale(1); }
 }
-#bill-content .bill-legend {
-  font-size: 13px;
+.bill-legend {
+  font-size: 14px;
   line-height: 1.9;
+  white-space: nowrap;
+  min-width: 0;
   animation: legendIn .55s ease .18s both;
 }
 @keyframes legendIn {
   from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: none; }
 }
-#bill-content .bill-legend i {
+.bill-legend i {
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 3px;
   margin-right: 6px;
 }
-#bill-content .bill-legend b { color: #1f4e79; margin-left: 4px; }
-#bill-content .bill-total {
+.bill-legend b { color: #1f4e79; margin-left: 4px; }
+.bill-total {
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px dashed rgba(31,78,121,0.14);
   font-size: 13px;
 }
-#bill-content .bill-total b { font-size: 17px; }
-#bill-content .bill-fb-item {
+.bill-total b { font-size: 17px; }
+.bill-fb-item {
   font-size: 13px;
   line-height: 1.7;
   padding: 6px 0;
   border-bottom: 1px dashed rgba(31,78,121,0.12);
 }
-#bill-content .bill-fb-item:last-child { border-bottom: 0; }
-#bill-content .bill-more-btn {
+.bill-fb-item:last-child { border-bottom: 0; }
+.bill-more-btn {
   margin-top: 6px;
   border: 0;
   background: rgba(31,78,121,0.08);
@@ -322,22 +332,22 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   font-size: 12px;
   cursor: pointer;
 }
-#bill-content .bill-card:hover {
+.bill-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 22px 46px rgba(15,40,35,0.16), inset 0 1px 0 rgba(255,255,255,0.85);
 }
-#bill-content .bill-card span { font-size: 12px; color: #667; }
-#bill-content .bill-card b { display: block; font-size: 24px; margin-top: 4px; }
-#bill-content .bill-row { font-size: 14px; line-height: 1.9; }
-#bill-content .bill-tag {
+.bill-card span { font-size: 12px; color: #667; }
+.bill-card b { display: block; font-size: 24px; margin-top: 4px; }
+.bill-row { font-size: 14px; line-height: 1.9; }
+.bill-tag {
   display: inline-block;
   border-radius: 999px;
   padding: 5px 11px;
   font-size: 13px;
   font-weight: 600;
 }
-#bill-content .bill-tag.grid { background: rgba(31,78,121,0.12); color: #1f4e79; }
-#bill-content .bill-tag.evidence { background: rgba(35,145,95,0.14); color: #1a6b3c; }
+.bill-tag.grid { background: rgba(31,78,121,0.12); color: #1f4e79; }
+.bill-tag.evidence { background: rgba(35,145,95,0.14); color: #1a6b3c; }
 .cmp-chart {
   position: relative;
   height: 210px;
@@ -496,8 +506,8 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   margin: 4px 0;
 }
 .bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
-#bill-content .bill-fb-text { font-size: 13px; color: #34443f; line-height: 1.65; }
-#bill-content .bill-fb-time { font-size: 11px; color: #8a9892; margin-top: 2px; }
+.bill-fb-text { font-size: 13px; color: #34443f; line-height: 1.65; }
+.bill-fb-time { font-size: 11px; color: #8a9892; margin-top: 2px; }
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -692,6 +702,33 @@ def comparison_chart(
     <div class="cmp-value">{proposed_text}</div>
     <div class="cmp-track"><div class="cmp-bar better" style="height:{h2:.1f}%;background:linear-gradient(180deg,{proposed_color}bb,{proposed_color});animation-delay:.15s"></div></div>
     <div class="cmp-label">方案</div>
+  </div>
+</div>
+"""
+
+
+def cost_pie_html(elec: float, service: float, parking: float) -> str:
+    total = max(1.0, elec + service + parking)
+    p1 = elec / total * 100
+    p2 = (elec + service) / total * 100
+    p3 = 100 - p2
+    pie_bg = (
+        f"conic-gradient(#2f6fb0 0 {p1:.1f}%, #48a37b {p1:.1f}% {p2:.1f}%, "
+        f"#e0a33a {p2:.1f}% 100%)"
+    )
+    return f"""
+<div class="bill-cost">
+  <div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:{pie_bg}"></div></div>
+  <svg class="pie-links" viewBox="0 0 34 112" preserveAspectRatio="none">
+    <line x1="0" y1="48" x2="32" y2="22" stroke="#2f6fb0" stroke-width="1" opacity=".55"/>
+    <line x1="0" y1="58" x2="32" y2="56" stroke="#48a37b" stroke-width="1" opacity=".55"/>
+    <line x1="0" y1="70" x2="32" y2="94" stroke="#e0a33a" stroke-width="1" opacity=".55"/>
+  </svg>
+  <div class="bill-legend">
+    <div><i style="background:#2f6fb0"></i>电费 ¥{elec:.0f} <b>{p1:.0f}%</b></div>
+    <div><i style="background:#48a37b"></i>服务费 ¥{service:.0f} <b>{p2 - p1:.0f}%</b></div>
+    <div><i style="background:#e0a33a"></i>停车费 ¥{parking:.0f} <b>{p3:.0f}%</b></div>
+    <div class="bill-total">单次合计 <b>¥{total:.0f}</b></div>
   </div>
 </div>
 """
@@ -941,6 +978,11 @@ function showBillInline(s) {{
       '<div class="bill-card"><span>花费明细</span>' +
         '<div class="bill-cost">' +
           '<div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:' + pieBg + '"></div></div>' +
+          '<svg class="pie-links" viewBox="0 0 34 112" preserveAspectRatio="none">' +
+            '<line x1="0" y1="48" x2="32" y2="22" stroke="#2f6fb0" stroke-width="1" opacity=".55"/>' +
+            '<line x1="0" y1="58" x2="32" y2="56" stroke="#48a37b" stroke-width="1" opacity=".55"/>' +
+            '<line x1="0" y1="70" x2="32" y2="94" stroke="#e0a33a" stroke-width="1" opacity=".55"/>' +
+          '</svg>' +
           '<div class="bill-legend">' +
             '<div><i style="background:#2f6fb0"></i>电费 ¥' + elec.toFixed(0) + ' <b>' + p1.toFixed(0) + '%</b></div>' +
             '<div><i style="background:#48a37b"></i>服务费 ¥' + service.toFixed(0) + ' <b>' + (p2 - p1).toFixed(0) + '%</b></div>' +
@@ -983,8 +1025,19 @@ stations.forEach(s => {{
   );
   marker.on('popupopen', () => {{
     try {{
-      showBillInline(s);
-      setTimeout(() => marker.closePopup(), 30);
+      const p = window.parent;
+      const path = p.location.pathname;
+      if (path.includes('page_feedback') || path.includes('page_sandbox')) {{
+        const a = p.document.createElement('a');
+        a.href = path + '?station=' + encodeURIComponent(s.name);
+        a.style.display = 'none';
+        p.document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 100);
+      }} else {{
+        showBillInline(s);
+        setTimeout(() => marker.closePopup(), 30);
+      }}
     }} catch (e) {{}}
   }});
 }});
@@ -1035,7 +1088,7 @@ def page_price_map() -> None:
     with row2[0]:
         st.metric("平均全成本", f"¥{view['full_cost_60'].mean():.0f}", border=True)
     with row2[1]:
-        st.metric("平均假空闲率", f"{view['fake_idle'].mean():.1%}", border=True)
+        st.metric("平均空闲误判率", f"{view['fake_idle'].mean():.1%}", border=True)
 
     with st.container(border=True):
         st.subheader("差价最大的站点")
@@ -1090,7 +1143,7 @@ def page_price_map() -> None:
                 "field_price": "实付价（元/度）",
                 "price_deviation": "价格偏差",
                 "full_cost_60": "全成本（60度+停车）",
-                "fake_idle_pct": "假空闲率",
+                "fake_idle_pct": "空闲误判率",
             }
         )
         st.dataframe(
@@ -1102,7 +1155,7 @@ def page_price_map() -> None:
                 "实付价（元/度）": st.column_config.NumberColumn(format="%.2f"),
                 "价格偏差": st.column_config.NumberColumn(format="%.1f%%"),
                 "全成本（60度+停车）": st.column_config.NumberColumn(format="¥%.0f"),
-                "假空闲率": st.column_config.NumberColumn(format="%.0f%%"),
+                "空闲误判率": st.column_config.NumberColumn(format="%.0f%%"),
             },
         )
 
@@ -1150,22 +1203,18 @@ def page_station_bill() -> None:
         st.html(
             '<div class="bill-metric"><span>全成本</span>'
             f'<b>¥{row["full_cost_60"]:.0f}</b>'
-            '<small>按充 60 度 + 停车 1 小时估算</small></div>'
+            '<small>充 60 度电费 + 服务费 + 1 小时停车费</small></div>'
         )
 
     with st.container(border=True):
         st.subheader("花费明细")
-        bill = pd.DataFrame(
-            {
-                "项目": ["电费", "服务费", "停车费"],
-                "金额": [
-                    row["price_elec"] * 60,
-                    row["price_service"] * 60,
-                    row["price_parking"],
-                ],
-            }
+        st.html(
+            cost_pie_html(
+                row["price_elec"] * 60,
+                row["price_service"] * 60,
+                row["price_parking"],
+            )
         )
-        st.bar_chart(bill, x="项目", y="金额", alt="电费、服务费、停车费构成")
         st.caption("按充 60 度、停车 1 小时估算；实际以账单为准。")
 
     with st.container(border=True):
@@ -1206,32 +1255,43 @@ def page_station_bill() -> None:
 def page_sandbox() -> None:
     df = st.session_state["df"]
     st.title("治理沙盘")
-    st.caption("调免费宽限、占用费、预约，观察等待、假空闲、有效供给的变化。")
+    st.caption("调免费宽限、占用费、预约，观察等待、空闲误判、有效供给的变化。")
+
+    names = sorted(df["station_name"].unique())
+    query_station = st.query_params.get("station")
+    if isinstance(query_station, list):
+        query_station = query_station[0] if query_station else None
+    if query_station not in names:
+        st.info("点击地图上的彩色圆点，查看对应充电站的治理沙盘。", title="从地图选择站点")
+        return
+    station = query_station
+    row = df.loc[df["station_name"] == station].iloc[0]
+    st.caption(f"当前站点：{station}")
 
     with st.sidebar:
         st.markdown("### 占位费参数")
         grace = st.slider("免费宽限（分钟）", 0, 60, 30, 5)
-        fee = st.slider("超时占用费（元/10分钟）", 1, 10, 3, 1)
+        fee = st.slider("超时占用费（元/分钟）", 0.1, 2.0, 0.3, 0.1)
         cap = st.slider("单次封顶（元）", 10, 100, 50, 10)
         reservation = st.toggle("启用预约锁位", value=True)
 
-    base_wait = float(df["queue"].mean())
-    base_fake = float(df["fake_idle"].mean())
-    total_piles = float(df["piles"].sum())
+    base_wait = float(row["queue"])
+    base_fake = float(row["fake_idle"])
+    total_piles = float(row["piles"])
 
     # 仅用于框架演示的简化公式，后续替换为排队/仿真模型
     grace_effect = max(0, 30 - grace) * 0.0008
     new_fake = max(
         0.02,
-        base_fake - fee * 0.012 - (0.04 if reservation else 0) - grace_effect,
+        base_fake - fee * 0.12 - (0.04 if reservation else 0) - grace_effect,
     )
     new_wait = max(
         2.0,
-        base_wait * (1 - fee * 0.03) - (3 if reservation else 0) - max(0, 30 - grace) * 0.03,
+        base_wait * (1 - fee * 0.3) - (3 if reservation else 0) - max(0, 30 - grace) * 0.03,
     )
     new_eff = total_piles * (1 - new_fake)
     events = max(0.0, (base_fake - new_fake) * total_piles * 8)
-    revenue = min(cap, fee * 6) * events
+    revenue = min(cap, fee * 60) * events
 
     row1 = st.columns(2)
     with row1[0]:
@@ -1240,7 +1300,7 @@ def page_sandbox() -> None:
         st.metric("平均等待（方案）", f"{new_wait:.1f} 分钟", f"{new_wait - base_wait:+.1f}", border=True)
     row2 = st.columns(2)
     with row2[0]:
-        st.metric("假空闲率", f"{new_fake:.1%}", f"{(new_fake - base_fake) * 100:+.1f}pp", border=True)
+        st.metric("空闲误判率", f"{new_fake:.1%}", f"{(new_fake - base_fake) * 100:+.1f}pp", border=True)
     with row2[1]:
         st.metric("有效桩数", f"{new_eff:.0f}", border=True)
 
@@ -1260,7 +1320,7 @@ def page_sandbox() -> None:
             )
     with right:
         with st.container(border=True):
-            st.subheader("假空闲率对比")
+            st.subheader("空闲误判率对比")
             st.html(
                 comparison_chart(
                     base_fake,
@@ -1273,12 +1333,12 @@ def page_sandbox() -> None:
             )
 
     with st.container(border=True):
-        st.subheader("当前假设")
+        st.subheader("方案预设")
         st.dataframe(
             pd.DataFrame(
                 {
                     "参数": ["免费宽限", "占用费", "封顶", "预约", "估算占用费收入/日"],
-                    "取值": [f"{grace} 分钟", f"¥{fee}/10分钟", f"¥{cap}", "开" if reservation else "关", f"¥{revenue:.0f}"],
+                    "取值": [f"{grace} 分钟", f"¥{fee:.1f}/分钟", f"¥{cap}", "开" if reservation else "关", f"¥{revenue:.0f}"],
                 }
             ),
             hide_index=True,
@@ -1288,7 +1348,7 @@ def page_sandbox() -> None:
 
     st.info(
         f"当前方案：等待从 {base_wait:.1f} 分钟降到 {new_wait:.1f} 分钟，"
-        f"假空闲率从 {base_fake:.1%} 降到 {new_fake:.1%}；需用真实数据校准费率和误伤率。",
+        f"空闲误判率从 {base_fake:.1%} 降到 {new_fake:.1%}；需用真实数据校准费率和误伤率。",
         title="沙盘结论",
     )
 
@@ -1298,28 +1358,41 @@ def page_feedback() -> None:
     st.title("反馈中心")
     st.caption("用户上报价格不符、占位、坏桩、排队；带证据、可审核，才能修正数据。")
 
-    if "feedback" not in st.session_state:
-        st.session_state.feedback = [
-            ["长沙南站充电站", "价格不符", "平台 1.20，现场小程序 1.65", "A", "2026-11-18"],
-            ["五一广场充电站", "占位", "有车充满不走，排队 20 分钟", "B", "2026-11-18"],
-            ["星沙服务区充电站", "坏桩", "2 号枪无法启动", "B", "2026-11-17"],
-        ]
+    names = sorted(df["station_name"].unique())
+    query_station = st.query_params.get("station")
+    if isinstance(query_station, list):
+        query_station = query_station[0] if query_station else None
+    if query_station not in names:
+        st.info("点击地图上的彩色圆点，查看对应充电站的反馈。", title="从地图选择站点")
+        return
+    station = query_station
+    row = df.loc[df["station_name"] == station].iloc[0]
+    st.caption(f"当前站点：{station}")
 
-    rows = st.session_state.feedback
+    if "feedback_by_station" not in st.session_state:
+        st.session_state.feedback_by_station = {}
+    rows = st.session_state.feedback_by_station.setdefault(
+        station,
+        [
+            ["价格不符", f"平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}", "A", "2026-11-18 09:42"],
+            ["占位", f"晚高峰排队约 {int(row['queue'])} 分钟", "B", "2026-11-17 18:20"],
+            ["坏桩", "现场部分充电枪无法启动", "B", "2026-11-16 12:05"],
+        ],
+    )
+
     c1, c2, c3 = st.columns(3)
     with c1:
         st.metric("反馈总数", len(rows), border=True)
     with c2:
-        st.metric("价格类", sum(1 for r in rows if r[1] == "价格不符"), border=True)
+        st.metric("价格类", sum(1 for r in rows if r[0] == "价格不符"), border=True)
     with c3:
-        st.metric("待核验", sum(1 for r in rows if r[3] != "A"), border=True)
+        st.metric("待核验", sum(1 for r in rows if r[2] != "A"), border=True)
 
     with st.form("feedback_form", border=True):
         st.subheader("提交一条反馈")
-        c1, c2, c3 = st.columns(3)
-        station = c1.selectbox("站点", sorted(df["station_name"].unique()), key="fb_station")
-        kind = c2.selectbox("类型", ["价格不符", "占位", "坏桩", "排队", "环境/服务"], key="fb_kind")
-        evidence = c3.selectbox("证据", ["A 实地+账单", "B 现场照片", "C 仅文字"], key="fb_evidence")
+        c1, c2 = st.columns(2)
+        kind = c1.selectbox("类型", ["价格不符", "占位", "坏桩", "排队", "环境/服务"], key="fb_kind")
+        evidence = c2.selectbox("证据", ["A 实地+账单", "B 现场照片", "C 仅文字"], key="fb_evidence")
         content = st.text_area(
             "具体问题",
             placeholder="例如：平台显示 1.20，现场扫码变成 1.65，服务费多 0.4",
@@ -1331,13 +1404,13 @@ def page_feedback() -> None:
         if not content.strip():
             st.error("写点具体问题，别只提交空内容。")
         else:
-            rows.append([station, kind, content.strip(), evidence[0], "2026-11-20"])
-            st.success("已加入当前会话；接后端后可持久化并进入审核。")
+            rows.append([kind, content.strip(), evidence[0], "2026-11-20 14:30"])
+            st.success("已加入当前站点的反馈；接后端后可持久化并进入审核。")
 
     with st.container(border=True):
-        st.subheader("反馈列表")
+        st.subheader(f"用户反馈（{len(rows)} 条）")
         st.dataframe(
-            pd.DataFrame(rows, columns=["站点", "类型", "内容", "证据", "时间"]),
+            pd.DataFrame(rows, columns=["类型", "内容", "证据", "时间"]),
             hide_index=True,
             alt="用户反馈列表",
         )
