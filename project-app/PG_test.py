@@ -1048,12 +1048,10 @@ function renderInlinePie(s) {{
     }}
     if (el.__chart) el.__chart.dispose();
     const chart = p.echarts.init(el, null, {{ renderer: 'canvas' }});
-    chart.setOption(option);
     el.__chart = chart;
     setTimeout(() => {{
       if (el.__chart) {{
-        el.__chart.clear();
-        el.__chart.setOption(option);
+        el.__chart.setOption(option, true);
       }}
     }}, 450);
     setTimeout(() => {{
