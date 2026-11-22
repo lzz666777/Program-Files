@@ -1011,6 +1011,10 @@ function renderInlinePie(s) {{
   const el = doc.getElementById('bill-echarts-pie');
   if (!el) return;
   const option = {{
+    animation: true,
+    animationDuration: 1600,
+    animationEasing: 'cubicOut',
+    animationType: 'expansion',
     title: {{
       text: '花费明细',
       subtext: '按充 60 度、停车 1 小时估算',
@@ -1046,6 +1050,12 @@ function renderInlinePie(s) {{
     const chart = p.echarts.init(el, null, {{ renderer: 'canvas' }});
     chart.setOption(option);
     el.__chart = chart;
+    setTimeout(() => {{
+      if (el.__chart) {{
+        el.__chart.clear();
+        el.__chart.setOption(option);
+      }}
+    }}, 450);
     setTimeout(() => {{
       if (el.__chart) el.__chart.resize();
     }}, 420);
