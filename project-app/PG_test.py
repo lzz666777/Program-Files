@@ -1025,15 +1025,6 @@ def page_price_map() -> None:
         st.html('<div class="rank-chart">' + "".join(rows) + "</div>")
 
     with st.container(border=True):
-        st.subheader("怎么读")
-        st.markdown(
-            "- 平台价是平台展示价；实付价是现场账单。\n"
-            "- 偏差 >0 表示现场更贵。\n"
-            "- 核验时间与证据等级见站点账单。\n"
-            "- 地图气泡：红 ≥20%，黄 10%—20%，绿 <10%。"
-        )
-
-    with st.container(border=True):
         st.subheader("站点价格清单")
         show = view[
             [
@@ -1150,6 +1141,15 @@ def page_station_bill() -> None:
         f"偏差 {row['price_deviation']:+.1f}%。证据等级 {row['evidence']}，核验时间 2026-11-18。",
         title="价格结论",
     )
+
+    with st.container(border=True):
+        st.subheader("怎么读")
+        st.markdown(
+            "- 平台价是平台展示价；实付价是现场账单。\n"
+            "- 偏差 >0 表示现场更贵。\n"
+            "- 核验时间与证据等级见上方标签。\n"
+            "- 地图气泡：红 ≥20%，黄 10%—20%，绿 <10%。"
+        )
 
     with st.container(border=True):
         st.subheader(f"最近反馈（{int(row['feedback_count'])} 条）")
