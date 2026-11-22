@@ -213,7 +213,9 @@ h1, h2, h3 { color: var(--ink) !important; letter-spacing: -0.02em; }
   z-index: 5;
   overflow-y: auto;
   padding: 72px 26px 40px;
-  background: transparent;
+  background: linear-gradient(180deg, rgba(250,253,251,0.92), rgba(247,251,249,0.86));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 .bill-head { display: flex; justify-content: space-between; align-items: center; }
 #bill-content h2 { margin: 0; font-size: 30px; }
@@ -979,13 +981,13 @@ function ensureStationBridge() {{
 ensureStationBridge();
 
 function closeBillContent(doc) {{
-  const c = doc.getElementById('bill-content');
-  if (!c) return;
-  (c.__dshHidden || []).forEach((ch) => {{
-    ch.style.display = ch.__dshOldDisplay || '';
-    ch.__dshHiddenFlag = false;
+  doc.querySelectorAll('#bill-content').forEach((c) => {{
+    (c.__dshHidden || []).forEach((ch) => {{
+      ch.style.display = ch.__dshOldDisplay || '';
+      ch.__dshHiddenFlag = false;
+    }});
+    c.remove();
   }});
-  c.remove();
 }}
 
 function renderInlinePie(s) {{
@@ -1100,11 +1102,24 @@ function showBillInline(s) {{
 
     if (!p.__dshBillWatch) {{
       p.__dshBillWatch = setInterval(() => {{
-        const c = p.document.getElementById('bill-content');
-        if (c && c.dataset.page && c.dataset.page !== p.location.pathname) {{
-          closeBillContent(p.document);
+        const layers = p.document.querySelectorAll('#bill-content');
+        for (const layer of layers) {{
+          if (layer.dataset.page && layer.dataset.page !== p.location.pathname) {{
+            closeBillContent(p.document);
+            break;
+          }}
         }}
-      }}, 500);
+      }}, 300);
+    }}
+    if (!p.__dshHistoryHooked) {{
+      p.__dshHistoryHooked = true;
+      const originalPush = p.history.pushState;
+      p.history.pushState = function (...args) {{
+        const result = originalPush.apply(this, args);
+        closeBillContent(p.document);
+        return result;
+      }};
+      p.addEventListener('popstate', () => closeBillContent(p.document));
     }}
 
     const card = (label, value) =>
