@@ -475,6 +475,29 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   opacity: 0 !important;
   visibility: hidden !important;
 }
+.bill-metric {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 30px rgba(15, 40, 35, 0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.bill-metric:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 46px rgba(15, 40, 35, 0.16), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+.bill-metric span { font-size: 14px; color: #58665f; }
+.bill-metric b {
+  display: block;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #122a26;
+  margin: 4px 0;
+}
+.bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
+#bill-content .bill-fb-text { font-size: 13px; color: #34443f; line-height: 1.65; }
+#bill-content .bill-fb-time { font-size: 11px; color: #8a9892; margin-top: 2px; }
 #panel-controls {
   position: fixed;
   top: 64px;
@@ -698,10 +721,22 @@ def make_map(data: pd.DataFrame) -> str:
                 "service": float(row["price_service"]),
                 "parking": float(row["price_parking"]),
                 "feedback_items": [
-                    f"价格不符：平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}",
-                    f"占位：晚高峰排队约 {int(row['queue'])} 分钟",
-                    "坏桩：现场部分充电枪无法启动",
-                    "环境/服务：现场无人值守",
+                    {
+                        "text": f"价格不符：平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}",
+                        "time": "2026-11-18 09:42",
+                    },
+                    {
+                        "text": f"占位：晚高峰排队约 {int(row['queue'])} 分钟",
+                        "time": "2026-11-17 18:20",
+                    },
+                    {
+                        "text": "坏桩：现场部分充电枪无法启动",
+                        "time": "2026-11-16 12:05",
+                    },
+                    {
+                        "text": "环境/服务：现场无人值守",
+                        "time": "2026-11-15 20:31",
+                    },
                 ],
             }
         )
@@ -879,9 +914,14 @@ function showBillInline(s) {{
     const p3 = 100 - p2;
     const pieBg = 'conic-gradient(#2f6fb0 0 ' + p1.toFixed(1) + '%, #48a37b ' +
       p1.toFixed(1) + '% ' + p2.toFixed(1) + '%, #e0a33a ' + p2.toFixed(1) + '% 100%)';
-    const feedback = s.feedback_items || [];
-    const firstFb = feedback.slice(0, 2).map((t) => '<div class="bill-fb-item">' + t + '</div>').join('');
-    const restFb = feedback.slice(2).map((t) => '<div class="bill-fb-item">' + t + '</div>').join('');
+    const feedback = (s.feedback_items || []).map((f) =>
+      typeof f === 'string' ? {{ text: f, time: '' }} : f
+    );
+    const fbItem = (f) =>
+      '<div class="bill-fb-item"><div class="bill-fb-text">' + f.text + '</div>' +
+      '<div class="bill-fb-time">' + (f.time || '') + '</div></div>';
+    const firstFb = feedback.slice(0, 2).map(fbItem).join('');
+    const restFb = feedback.slice(2).map(fbItem).join('');
     const moreBtn = restFb ? '<button class="bill-more-btn" data-more>显示更多</button>' : '';
 
     content.innerHTML =
@@ -898,7 +938,7 @@ function showBillInline(s) {{
         card('价格偏差', (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%') +
         card('全成本', '¥' + s.full_cost.toFixed(0)) +
       '</div>' +
-      '<div class="bill-card"><span>一次充电的钱花在哪</span>' +
+      '<div class="bill-card"><span>花费明细</span>' +
         '<div class="bill-cost">' +
           '<div class="pie3d"><div class="pie-side"></div><div class="pie" style="background:' + pieBg + '"></div></div>' +
           '<div class="bill-legend">' +
@@ -909,7 +949,7 @@ function showBillInline(s) {{
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="bill-card"><span>最近反馈</span>' +
+      '<div class="bill-card"><span>用户反馈</span>' +
         '<div class="bill-fb">' + firstFb + '<div class="bill-more" hidden>' + restFb + '</div></div>' +
         moreBtn +
       '</div>';
@@ -1101,12 +1141,20 @@ def page_station_bill() -> None:
         st.metric("实地实付", f"¥{row['field_price']:.2f}/度", border=True)
     row2 = st.columns(2)
     with row2[0]:
-        st.metric("价格偏差", f"{row['price_deviation']:+.1f}%", border=True)
+        st.html(
+            '<div class="bill-metric"><span>价格偏差</span>'
+            f'<b>{row["price_deviation"]:+.1f}%</b>'
+            '<small>正数表示现场更贵，负数表示更便宜</small></div>'
+        )
     with row2[1]:
-        st.metric("全成本", f"¥{row['full_cost_60']:.0f}", border=True)
+        st.html(
+            '<div class="bill-metric"><span>全成本</span>'
+            f'<b>¥{row["full_cost_60"]:.0f}</b>'
+            '<small>按充 60 度 + 停车 1 小时估算</small></div>'
+        )
 
     with st.container(border=True):
-        st.subheader("一次充电的钱花在哪")
+        st.subheader("花费明细")
         bill = pd.DataFrame(
             {
                 "项目": ["电费", "服务费", "停车费"],
@@ -1143,25 +1191,16 @@ def page_station_bill() -> None:
     )
 
     with st.container(border=True):
-        st.subheader("怎么读")
-        st.markdown(
-            "- 平台价是平台展示价；实付价是现场账单。\n"
-            "- 偏差 >0 表示现场更贵。\n"
-            "- 核验时间与证据等级见上方标签。\n"
-            "- 地图气泡：红 ≥20%，黄 10%—20%，绿 <10%。"
-        )
-
-    with st.container(border=True):
-        st.subheader(f"最近反馈（{int(row['feedback_count'])} 条）")
+        st.subheader(f"用户反馈（{int(row['feedback_count'])} 条）")
         feedback = pd.DataFrame(
             [
-                ["价格不符", "平台显示 1.20，现场扫小程序变成 1.65", "A"],
-                ["占位", "晚高峰有车充满不走，等了 20 分钟", "B"],
-                ["坏桩", "3 号枪无法启动，现场没人处理", "B"],
+                ["价格不符", "平台显示 1.20，现场扫小程序变成 1.65", "A", "2026-11-18 09:42"],
+                ["占位", "晚高峰有车充满不走，等了 20 分钟", "B", "2026-11-17 18:20"],
+                ["坏桩", "3 号枪无法启动，现场没人处理", "B", "2026-11-16 12:05"],
             ],
-            columns=["类型", "内容", "证据"],
+            columns=["类型", "内容", "证据", "时间"],
         )
-        st.dataframe(feedback, hide_index=True, alt="站点最近用户反馈")
+        st.dataframe(feedback, hide_index=True, alt="站点用户反馈")
 
 
 def page_sandbox() -> None:
