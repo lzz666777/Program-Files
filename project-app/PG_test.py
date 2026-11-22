@@ -863,6 +863,7 @@ def echarts_pie_html(elec: float, service: float, parking: float) -> str:
         '</head><body><div id="pie"></div><script>'
         'var chart=echarts.init(document.getElementById("pie"),null,{renderer:"canvas"});'
         'chart.setOption(' + option + ');'
+        'setTimeout(function(){chart.clear();chart.setOption(' + option + ');},500);'
         'window.addEventListener("resize",function(){chart.resize();});'
         '</script></body></html>'
     )
