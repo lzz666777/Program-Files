@@ -1,4 +1,4 @@
-"""
+﻿"""
 “桩”尽其用 · 项目初始框架
 四个模块：价格地图 / 站点账单 / 治理沙盘 / 反馈中心
 
@@ -511,7 +511,7 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
 .bill-echarts { width: 100%; height: 330px; }
 [data-testid="stElementContainer"]:has(canvas) {
   transform-origin: center;
-  animation: chartIn .9s cubic-bezier(.22,1,.36,1) both;
+  animation: chartIn 1.5s cubic-bezier(.22,1,.36,1) both;
 }
 @keyframes chartIn {
   0% { opacity: 0; transform: scale(.72) rotate(-4deg); }
@@ -825,7 +825,7 @@ def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
     ]
     return {
         "animation": True,
-        "animationDuration": 1000,
+        "animationDuration": 1600,
         "animationEasing": "cubicOut",
         "animationType": "expansion",
         "title": {
@@ -1010,7 +1010,7 @@ function renderInlinePie(s) {{
   if (!el) return;
   const option = {{
     animation: true,
-    animationDuration: 1000,
+    animationDuration: 1600,
     animationEasing: 'cubicOut',
     animationType: 'expansion',
     title: {{
