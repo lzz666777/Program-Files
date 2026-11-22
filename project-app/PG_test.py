@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import math
+import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -24,6 +26,7 @@ st.set_page_config(
 )
 
 DATA_PATH = Path(__file__).parent / "data" / "stations.csv"
+FEEDBACK_DB = Path(__file__).parent / "data" / "feedback.db"
 
 GLASS_CSS = """
 <style>
@@ -1691,6 +1694,50 @@ def page_sandbox() -> None:
     )
 
 
+def feedback_connection() -> sqlite3.Connection:
+    FEEDBACK_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(FEEDBACK_DB, timeout=10)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL,
+            evidence TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    return conn
+
+
+def load_feedback(station: str) -> list[list[str]]:
+    conn = feedback_connection()
+    try:
+        cur = conn.execute(
+            "SELECT kind, content, evidence, created_at FROM feedback "
+            "WHERE station = ? ORDER BY id DESC",
+            (station,),
+        )
+        return [list(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def save_feedback(station: str, kind: str, content: str, evidence: str) -> None:
+    conn = feedback_connection()
+    try:
+        conn.execute(
+            "INSERT INTO feedback (station, kind, content, evidence, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (station, kind, content, evidence, datetime.now().strftime("%Y-%m-%d %H:%M")),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def page_feedback() -> None:
     df = st.session_state["df"]
     st.title("反馈中心")
@@ -1707,16 +1754,12 @@ def page_feedback() -> None:
     row = df.loc[df["station_name"] == station].iloc[0]
     st.caption(f"当前站点：{station}")
 
-    if "feedback_by_station" not in st.session_state:
-        st.session_state.feedback_by_station = {}
-    rows = st.session_state.feedback_by_station.setdefault(
-        station,
-        [
-            ["价格不符", f"平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}", "A", "2026-11-18 09:42"],
-            ["占位", f"晚高峰排队约 {int(row['queue'])} 分钟", "B", "2026-11-17 18:20"],
-            ["坏桩", "现场部分充电枪无法启动", "B", "2026-11-16 12:05"],
-        ],
-    )
+    sample_rows = [
+        ["价格不符", f"平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}", "A", "2026-11-18 09:42"],
+        ["占位", f"晚高峰排队约 {int(row['queue'])} 分钟", "B", "2026-11-17 18:20"],
+        ["坏桩", "现场部分充电枪无法启动", "B", "2026-11-16 12:05"],
+    ]
+    rows = sample_rows + load_feedback(station)
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -1742,8 +1785,9 @@ def page_feedback() -> None:
         if not content.strip():
             st.error("写点具体问题，别只提交空内容。")
         else:
-            rows.append([kind, content.strip(), evidence[0], "2026-11-20 14:30"])
-            st.success("已加入当前站点的反馈；接后端后可持久化并进入审核。")
+            save_feedback(station, kind, content.strip(), evidence[0])
+            st.toast("反馈已保存，刷新后仍保留", icon="✅")
+            st.rerun()
 
     with st.container(border=True):
         st.subheader(f"用户反馈（{len(rows)} 条）")
@@ -1752,7 +1796,7 @@ def page_feedback() -> None:
             hide_index=True,
             alt="用户反馈列表",
         )
-        st.caption("演示：反馈只存在当前浏览器会话；刷新页面会回到示例数据。")
+        st.caption("反馈已写入本地 SQLite；刷新页面不会丢失。")
 
 
 def main() -> None:
