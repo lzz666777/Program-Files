@@ -815,6 +815,10 @@ def echarts_pie_option(elec: float, service: float, parking: float) -> dict:
         {"value": round(parking), "name": "停车费"},
     ]
     return {
+        "animation": True,
+        "animationDuration": 1000,
+        "animationEasing": "cubicOut",
+        "animationType": "expansion",
         "title": {
             "text": "花费明细",
             "subtext": "按充 60 度、停车 1 小时估算",
@@ -996,6 +1000,10 @@ function renderInlinePie(s) {{
   const el = doc.getElementById('bill-echarts-pie');
   if (!el) return;
   const option = {{
+    animation: true,
+    animationDuration: 1000,
+    animationEasing: 'cubicOut',
+    animationType: 'expansion',
     title: {{
       text: '花费明细',
       subtext: '按充 60 度、停车 1 小时估算',
@@ -1087,6 +1095,13 @@ function showBillInline(s) {{
         node = parent;
       }}
     }}
+    [...main.children].forEach((ch) => {{
+      if (ch === content || ch === mapEl || ch.contains(mapEl) || ch.__dshHiddenFlag) return;
+      ch.__dshOldDisplay = ch.style.display;
+      ch.style.display = 'none';
+      ch.__dshHiddenFlag = true;
+      content.__dshHidden.push(ch);
+    }});
     content.addEventListener('click', (e) => {{
       if (e.target.closest('[data-close]')) {{
         closeBillContent(doc);
@@ -1115,8 +1130,11 @@ function showBillInline(s) {{
       p.__dshHistoryHooked = true;
       const originalPush = p.history.pushState;
       p.history.pushState = function (...args) {{
+        const before = p.location.pathname;
         const result = originalPush.apply(this, args);
-        closeBillContent(p.document);
+        if (p.location.pathname !== before) {{
+          closeBillContent(p.document);
+        }}
         return result;
       }};
       p.addEventListener('popstate', () => closeBillContent(p.document));
