@@ -1806,6 +1806,7 @@ def page_feedback() -> None:
         query_station = query_station[0] if query_station else None
     if query_station not in names:
         st.info("点击地图上的彩色圆点，查看对应充电站的反馈。", title="从地图选择站点")
+        st.caption(f"反馈存储：{'Supabase' if supabase_config() else '本地 SQLite'}")
         return
     station = query_station
     row = df.loc[df["station_name"] == station].iloc[0]
