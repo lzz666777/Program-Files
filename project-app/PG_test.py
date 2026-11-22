@@ -506,6 +506,50 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   margin: 4px 0;
 }
 .bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
+.bill-preset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.bill-preset div {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 14px;
+  padding: 8px 10px;
+}
+.bill-preset small { display: block; font-size: 11px; color: #7e8b85; }
+.bill-preset b { font-size: 15px; color: #1f4e79; }
+.fb-inline-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+.fb-inline-form label { font-size: 12px; color: #58665f; }
+.fb-inline-form select,
+.fb-inline-form textarea {
+  width: 100%;
+  margin-top: 4px;
+  border: 1px solid rgba(31,78,121,0.14);
+  border-radius: 10px;
+  padding: 7px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  background: rgba(255,255,255,0.72);
+}
+.fb-inline-form textarea { grid-column: 1 / -1; height: 66px; resize: vertical; }
+.fb-inline-form button {
+  grid-column: 1 / -1;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px;
+  background: #1f4e79;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .bill-fb-text { font-size: 13px; color: #34443f; line-height: 1.65; }
 .bill-fb-time { font-size: 11px; color: #8a9892; margin-top: 2px; }
 #panel-controls {
@@ -1038,7 +1082,12 @@ function showSandboxInline(s) {{
       bars('等待时间对比', baseWait, newWait, maxWait, '#2f6fb0', '') +
       bars('空闲误判率对比', baseFake * 100, newFake * 100, maxFake * 100, '#23915f', '%') +
     '</div>' +
-    '<div class="bill-card"><span>方案预设</span><div class="bill-row">免费宽限 30 分钟 · 超时占用费 0.3 元/分钟 · 单次封顶 50 元 · 启用预约锁位</div></div>';
+    '<div class="bill-card"><span>方案预设</span><div class="bill-preset">' +
+      '<div><small>免费宽限</small><b>30 分钟</b></div>' +
+      '<div><small>超时占用费</small><b>0.3 元/分钟</b></div>' +
+      '<div><small>单次封顶</small><b>50 元</b></div>' +
+      '<div><small>预约锁位</small><b>开启</b></div>' +
+    '</div></div>';
 }}
 
 function showFeedbackInline(s) {{
@@ -1061,7 +1110,37 @@ function showFeedbackInline(s) {{
       mcard('待核验', s.evidence === 'A' ? '1' : '2') +
       mcard('证据等级', s.evidence) +
     '</div>' +
-    '<div class="bill-card"><span>用户反馈</span><div class="bill-fb">' + items + '</div></div>';
+    '<div class="bill-card"><span>提交一条反馈</span>' +
+      '<div class="fb-inline-form">' +
+        '<label>类型<select id="fb-kind-inline"><option>价格不符</option><option>占位</option><option>坏桩</option><option>排队</option><option>环境/服务</option></select></label>' +
+        '<label>证据<select id="fb-evidence-inline"><option>A 实地+账单</option><option>B 现场照片</option><option>C 仅文字</option></select></label>' +
+        '<textarea id="fb-content-inline" placeholder="例如：平台显示 1.20，现场扫码变成 1.65"></textarea>' +
+        '<button type="button" id="fb-submit-inline">提交反馈</button>' +
+      '</div>' +
+      '<div class="bill-fb" id="fb-inline-list">' + items + '</div>' +
+    '</div>';
+
+  const submit = c.querySelector('#fb-submit-inline');
+  if (submit) {{
+    submit.addEventListener('click', () => {{
+      const content = c.querySelector('#fb-content-inline');
+      const list = c.querySelector('#fb-inline-list');
+      const kind = c.querySelector('#fb-kind-inline').value;
+      if (!content || !list || !content.value.trim()) return;
+      const now = new Date();
+      const stamp = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0');
+      const item = doc.createElement('div');
+      item.className = 'bill-fb-item';
+      item.innerHTML = '<div class="bill-fb-text">' + kind + '：' + content.value.trim() +
+        '</div><div class="bill-fb-time">' + stamp + '</div>';
+      list.prepend(item);
+      content.value = '';
+    }});
+  }}
 }}
 
 map.on('movestart zoomstart', collapsePanels);
