@@ -506,6 +506,7 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   margin: 4px 0;
 }
 .bill-metric small { font-size: 11px; line-height: 1.35; color: #7e8b85; }
+.bill-echarts { width: 100%; height: 330px; }
 .bill-preset {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -987,53 +988,56 @@ function closeBillContent(doc) {{
   c.remove();
 }}
 
-function pieSvg(s) {{
-  const elec = s.elec * 60;
-  const service = s.service * 60;
-  const parking = s.parking;
-  const total = Math.max(1, elec + service + parking);
-  const items = [
-    ['电费', elec, '#2f6fb0'],
-    ['服务费', service, '#48a37b'],
-    ['停车费', parking, '#e0a33a'],
-  ];
-  const cx = 280, cy = 168, radius = 112;
-  let angle = -90;
-  let paths = '', leaders = '', labels = '';
-  items.forEach(([name, value, color]) => {{
-    const fraction = value / total;
-    const sweep = fraction * 360;
-    const mid = (angle + sweep / 2) * Math.PI / 180;
-    const ox = Math.cos(mid) * 4;
-    const oy = Math.sin(mid) * 4;
-    const a1 = angle * Math.PI / 180;
-    const a2 = (angle + sweep) * Math.PI / 180;
-    const x1 = cx + ox + radius * Math.cos(a1);
-    const y1 = cy + oy + radius * Math.sin(a1);
-    const x2 = cx + ox + radius * Math.cos(a2);
-    const y2 = cy + oy + radius * Math.sin(a2);
-    const large = sweep > 180 ? 1 : 0;
-    paths += '<path d="M ' + (cx + ox).toFixed(1) + ' ' + (cy + oy).toFixed(1) +
-      ' L ' + x1.toFixed(1) + ' ' + y1.toFixed(1) +
-      ' A ' + radius + ' ' + radius + ' 0 ' + large + ' 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) +
-      ' Z" fill="' + color + '" stroke="#ffffff" stroke-width="2"/>';
-    const edgeX = cx + ox + Math.cos(mid) * (radius + 4);
-    const edgeY = cy + oy + Math.sin(mid) * (radius + 4);
-    const lx = cx + ox + Math.cos(mid) * (radius + 30);
-    const ly = cy + oy + Math.sin(mid) * (radius + 30);
-    const anchor = Math.cos(mid) >= 0 ? 'start' : 'end';
-    const tx = lx + (anchor === 'start' ? 10 : -10);
-    leaders += '<polyline points="' + edgeX.toFixed(1) + ',' + edgeY.toFixed(1) + ' ' +
-      lx.toFixed(1) + ',' + ly.toFixed(1) + ' ' + tx.toFixed(1) + ',' + ly.toFixed(1) +
-      '" fill="none" stroke="' + color + '" stroke-width="1" opacity=".75"/>';
-    labels += '<text x="' + tx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) +
-      '" text-anchor="' + anchor + '" font-size="14" fill="#1f4e79" font-weight="600">' +
-      name + ' ¥' + value.toFixed(0) + ' · ' + (fraction * 100).toFixed(0) + '%</text>';
-    angle += sweep;
-  }});
-  return '<div class="cost-pie-wrap"><svg class="cost-pie-svg" viewBox="0 0 560 340" height="340">' +
-    paths + leaders + labels + '</svg>' +
-    '<div class="cost-pie-total">单次合计 <b>¥' + total.toFixed(0) + '</b></div></div>';
+function renderInlinePie(s) {{
+  const p = window.parent;
+  const doc = p.document;
+  const el = doc.getElementById('bill-echarts-pie');
+  if (!el) return;
+  const option = {{
+    title: {{
+      text: '花费明细',
+      subtext: '按充 60 度、停车 1 小时估算',
+      left: 'center',
+    }},
+    tooltip: {{ trigger: 'item' }},
+    legend: {{ orient: 'vertical', left: 'left' }},
+    series: [{{
+      name: '费用构成',
+      type: 'pie',
+      radius: '50%',
+      data: [
+        {{ value: Math.round(s.elec * 60), name: '电费' }},
+        {{ value: Math.round(s.service * 60), name: '服务费' }},
+        {{ value: Math.round(s.parking), name: '停车费' }},
+      ],
+      emphasis: {{
+        itemStyle: {{
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)',
+        }},
+      }},
+    }}],
+  }};
+  const draw = () => {{
+    if (!p.echarts || !el.isConnected) return;
+    if (el.__chart) el.__chart.dispose();
+    const chart = p.echarts.init(el, null, {{ renderer: 'canvas' }});
+    chart.setOption(option);
+    el.__chart = chart;
+  }};
+  if (p.echarts) {{
+    draw();
+  }} else {{
+    let script = doc.getElementById('echarts-cdn');
+    if (!script) {{
+      script = doc.createElement('script');
+      script.id = 'echarts-cdn';
+      script.src = 'https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js';
+      doc.head.appendChild(script);
+    }}
+    script.addEventListener('load', draw, {{ once: true }});
+  }}
 }}
 
 function showBillInline(s) {{
@@ -1125,11 +1129,12 @@ function showBillInline(s) {{
         card('价格偏差', (s.deviation > 0 ? '+' : '') + s.deviation.toFixed(1) + '%') +
         card('全成本', '¥' + s.full_cost.toFixed(0)) +
       '</div>' +
-      '<div class="bill-card"><span>花费明细</span>' + pieSvg(s) + '</div>' +
+      '<div class="bill-card"><div id="bill-echarts-pie" class="bill-echarts"></div></div>' +
       '<div class="bill-card"><span>用户反馈</span>' +
         '<div class="bill-fb">' + firstFb + '<div class="bill-more" hidden>' + restFb + '</div></div>' +
         moreBtn +
       '</div>';
+    renderInlinePie(s);
   }} catch (e) {{}}
 }}
 
