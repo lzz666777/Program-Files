@@ -1736,7 +1736,11 @@ def load_feedback(station: str) -> list[list[str]]:
         )
         req = urllib.request.Request(
             query,
-            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+            headers=(
+                {"apikey": key}
+                if key.startswith("sb_")
+                else {"apikey": key, "Authorization": f"Bearer {key}"}
+            ),
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.load(resp)
@@ -1768,16 +1772,16 @@ def save_feedback(station: str, kind: str, content: str, evidence: str) -> None:
             },
             ensure_ascii=False,
         ).encode("utf-8")
+        headers = {"apikey": key}
+        if not key.startswith("sb_"):
+            headers["Authorization"] = f"Bearer {key}"
+        headers["Content-Type"] = "application/json"
+        headers["Prefer"] = "return=minimal"
         req = urllib.request.Request(
             f"{base}/rest/v1/feedback",
             data=body,
             method="POST",
-            headers={
-                "apikey": key,
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-            },
+            headers=headers,
         )
         with urllib.request.urlopen(req, timeout=10):
             pass
@@ -1810,6 +1814,7 @@ def page_feedback() -> None:
     station = query_station
     row = df.loc[df["station_name"] == station].iloc[0]
     st.caption(f"当前站点：{station}")
+    st.caption(f"反馈存储：{'Supabase' if supabase_config() else '本地 SQLite'}")
 
     sample_rows = [
         ["价格不符", f"平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}", "A", "2026-11-18 09:42"],
