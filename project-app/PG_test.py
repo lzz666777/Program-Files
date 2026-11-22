@@ -1290,6 +1290,7 @@ function showSandboxInline(s) {{
 }}
 
 function showFeedbackInline(s) {{
+  const p = window.parent;
   showBillInline(s);
   const doc = window.parent.document;
   const c = doc.getElementById('bill-content');
