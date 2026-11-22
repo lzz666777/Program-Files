@@ -874,6 +874,7 @@ def make_map(data: pd.DataFrame) -> str:
                 "lat": lat,
                 "lng": lng,
                 "piles": int(row["piles"]),
+                "feedback_backend": "supabase" if supabase_config() else "sqlite",
                 "queue": float(row["queue"]),
                 "fake_idle": float(row["fake_idle"]),
                 "occupancy": float(row["occupancy"]),
@@ -1303,6 +1304,7 @@ function showFeedbackInline(s) {{
     '<div class="bill-head"><h2>反馈中心</h2><button class="bill-close" data-close>关闭</button></div>' +
     '<div class="bill-name">' + s.name + '</div>' +
     '<div class="bill-sub">' + s.district + ' · ' + s.operator + ' · ' + s.piles + ' 桩</div>' +
+    '<div class="bill-sub">反馈存储：' + (s.feedback_backend === 'supabase' ? 'Supabase' : '本地 SQLite') + '</div>' +
     '<div class="bill-grid">' +
       mcard('反馈总数', String(s.feedback)) +
       mcard('价格类', '1') +
@@ -1325,21 +1327,15 @@ function showFeedbackInline(s) {{
   if (submit) {{
     submit.addEventListener('click', () => {{
       const content = c.querySelector('#fb-content-inline');
-      const list = c.querySelector('#fb-inline-list');
       const kind = c.querySelector('#fb-kind-inline').value;
-      if (!content || !list || !content.value.trim()) return;
-      const now = new Date();
-      const stamp = now.getFullYear() + '-' +
-        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-        String(now.getDate()).padStart(2, '0') + ' ' +
-        String(now.getHours()).padStart(2, '0') + ':' +
-        String(now.getMinutes()).padStart(2, '0');
-      const item = doc.createElement('div');
-      item.className = 'bill-fb-item';
-      item.innerHTML = '<div class="bill-fb-text">' + kind + '：' + content.value.trim() +
-        '</div><div class="bill-fb-time">' + stamp + '</div>';
-      list.prepend(item);
-      content.value = '';
+      const evidence = c.querySelector('#fb-evidence-inline').value;
+      if (!content || !content.value.trim()) return;
+      const base = p.location.pathname +
+        '?station=' + encodeURIComponent(s.name) +
+        '&fb_kind=' + encodeURIComponent(kind) +
+        '&fb_evidence=' + encodeURIComponent(evidence) +
+        '&fb_content=' + encodeURIComponent(content.value.trim());
+      p.location.href = base;
     }});
   }}
 }}
@@ -1815,6 +1811,21 @@ def page_feedback() -> None:
     row = df.loc[df["station_name"] == station].iloc[0]
     st.caption(f"当前站点：{station}")
     st.caption(f"反馈存储：{'Supabase' if supabase_config() else '本地 SQLite'}")
+
+    incoming = st.query_params.get("fb_content")
+    if isinstance(incoming, list):
+        incoming = incoming[0] if incoming else None
+    if incoming:
+        incoming_kind = st.query_params.get("fb_kind", "环境/服务")
+        incoming_evidence = st.query_params.get("fb_evidence", "C")
+        if isinstance(incoming_kind, list):
+            incoming_kind = incoming_kind[0]
+        if isinstance(incoming_evidence, list):
+            incoming_evidence = incoming_evidence[0]
+        save_feedback(station, str(incoming_kind), str(incoming), str(incoming_evidence))
+        st.query_params.clear()
+        st.query_params["station"] = station
+        st.rerun()
 
     sample_rows = [
         ["价格不符", f"平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}", "A", "2026-11-18 09:42"],
