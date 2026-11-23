@@ -614,6 +614,13 @@ body.hide-right [data-testid="stMainBlockContainer"]::before {
   font-weight: 600;
   cursor: pointer;
 }
+.fb-inline-msg {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #1f4e79;
+}
 .bill-fb-text { font-size: 13px; color: #34443f; line-height: 1.65; }
 .bill-fb-time { font-size: 11px; color: #8a9892; margin-top: 2px; }
 #panel-controls {
@@ -864,6 +871,7 @@ def echarts_pie_html(elec: float, service: float, parking: float) -> str:
 
 def make_map(data: pd.DataFrame) -> str:
     coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
+    public_cfg = supabase_public_config()
     stations = []
     for i, row in data.reset_index(drop=True).iterrows():
         lng, lat = coords[i]
@@ -877,6 +885,8 @@ def make_map(data: pd.DataFrame) -> str:
                 "lng": lng,
                 "piles": int(row["piles"]),
                 "feedback_backend": "supabase" if supabase_config() else "sqlite",
+                "supabase_url": public_cfg[0] if public_cfg else "",
+                "supabase_publishable": public_cfg[1] if public_cfg else "",
                 "queue": float(row["queue"]),
                 "fake_idle": float(row["fake_idle"]),
                 "occupancy": float(row["occupancy"]),
@@ -1321,6 +1331,7 @@ function showFeedbackInline(s) {{
         '<textarea id="fb-content-inline" placeholder="例如：平台显示 1.20，现场扫码变成 1.65"></textarea>' +
         '<button type="button" id="fb-submit-inline">提交反馈</button>' +
       '</div>' +
+      '<div class="fb-inline-msg" id="fb-inline-msg"></div>' +
     '</div>' +
     '<div class="bill-card"><span>用户反馈（' + feedbackItems.length + ' 条）</span>' +
       '<div class="bill-fb" id="fb-inline-list">' + items + '</div>' +
@@ -1332,13 +1343,56 @@ function showFeedbackInline(s) {{
       const content = c.querySelector('#fb-content-inline');
       const kind = c.querySelector('#fb-kind-inline').value;
       const evidence = c.querySelector('#fb-evidence-inline').value;
-      if (!content || !content.value.trim()) return;
+      const msg = c.querySelector('#fb-inline-msg');
+      if (!content || !content.value.trim()) {{
+        if (msg) msg.textContent = '请先填写具体问题。';
+        return;
+      }}
       const base = p.location.pathname +
         '?station=' + encodeURIComponent(s.name) +
         '&fb_kind=' + encodeURIComponent(kind) +
         '&fb_evidence=' + encodeURIComponent(evidence) +
         '&fb_content=' + encodeURIComponent(content.value.trim());
-      p.postMessage({{ type: 'dsh-feedback-submit', url: base }}, '*');
+      if (!s.supabase_url || !s.supabase_publishable) {{
+        p.postMessage({{ type: 'dsh-feedback-submit', url: base }}, '*');
+        return;
+      }}
+      if (msg) msg.textContent = '正在保存...';
+      const now = new Date();
+      const stamp = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0');
+      fetch(s.supabase_url + '/rest/v1/feedback', {{
+        method: 'POST',
+        headers: {{
+          apikey: s.supabase_publishable,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        }},
+        body: JSON.stringify({{
+          station: s.name,
+          kind: kind,
+          content: content.value.trim(),
+          evidence: evidence,
+          created_at: stamp,
+        }}),
+      }})
+        .then(async (res) => {{
+          if (!res.ok) throw new Error(await res.text());
+          const list = c.querySelector('#fb-inline-list');
+          const item = doc.createElement('div');
+          item.className = 'bill-fb-item';
+          item.innerHTML = '<div class="bill-fb-text">' + kind + '：' + content.value.trim() +
+            '</div><div class="bill-fb-time">' + stamp + '</div>';
+          if (list) list.prepend(item);
+          content.value = '';
+          if (msg) msg.textContent = '反馈已保存，刷新后仍保留。';
+        }})
+        .catch((err) => {{
+          if (msg) msg.textContent = '保存失败：' + err.message;
+        }});
     }});
   }}
 }}
@@ -1718,6 +1772,18 @@ def supabase_config() -> tuple[str, str] | None:
         cfg = st.secrets["supabase"]
         url = str(cfg["url"]).rstrip("/")
         key = str(cfg["key"])
+        if url and key:
+            return url, key
+    except Exception:
+        pass
+    return None
+
+
+def supabase_public_config() -> tuple[str, str] | None:
+    try:
+        cfg = st.secrets["supabase"]
+        url = str(cfg["url"]).rstrip("/")
+        key = str(cfg.get("publishable") or cfg.get("anon") or "")
         if url and key:
             return url, key
     except Exception:
