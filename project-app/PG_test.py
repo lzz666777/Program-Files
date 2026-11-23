@@ -1834,7 +1834,11 @@ def page_feedback() -> None:
             incoming_kind = incoming_kind[0]
         if isinstance(incoming_evidence, list):
             incoming_evidence = incoming_evidence[0]
-        save_feedback(station, str(incoming_kind), str(incoming), str(incoming_evidence))
+        try:
+            save_feedback(station, str(incoming_kind), str(incoming), str(incoming_evidence))
+        except Exception as exc:
+            st.error(f"反馈保存失败：{exc}")
+            st.stop()
         st.query_params.clear()
         st.query_params["station"] = station
         st.rerun()
@@ -1844,7 +1848,11 @@ def page_feedback() -> None:
         ["占位", f"晚高峰排队约 {int(row['queue'])} 分钟", "B", "2026-11-17 18:20"],
         ["坏桩", "现场部分充电枪无法启动", "B", "2026-11-16 12:05"],
     ]
-    rows = sample_rows + load_feedback(station)
+    try:
+        rows = sample_rows + load_feedback(station)
+    except Exception as exc:
+        st.error(f"读取反馈失败：{exc}")
+        rows = sample_rows
 
     c1, c2, c3 = st.columns(3)
     with c1:
