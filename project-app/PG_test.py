@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -1740,8 +1741,12 @@ def load_feedback(station: str) -> list[list[str]]:
                 else {"apikey": key, "Authorization": f"Bearer {key}"}
             ),
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.load(resp)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.load(resp)
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")
+            raise RuntimeError(f"Supabase 读取失败 {exc.code}: {body}") from exc
         return [[r["kind"], r["content"], r["evidence"], r["created_at"]] for r in data]
 
     conn = feedback_connection()
@@ -1781,8 +1786,12 @@ def save_feedback(station: str, kind: str, content: str, evidence: str) -> None:
             method="POST",
             headers=headers,
         )
-        with urllib.request.urlopen(req, timeout=10):
-            pass
+        try:
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")
+            raise RuntimeError(f"Supabase 写入失败 {exc.code}: {body}") from exc
         return
 
     conn = feedback_connection()
