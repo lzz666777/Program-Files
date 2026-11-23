@@ -1338,7 +1338,7 @@ function showFeedbackInline(s) {{
         '&fb_kind=' + encodeURIComponent(kind) +
         '&fb_evidence=' + encodeURIComponent(evidence) +
         '&fb_content=' + encodeURIComponent(content.value.trim());
-      p.location.href = base;
+      p.postMessage({{ type: 'dsh-feedback-submit', url: base }}, '*');
     }});
   }}
 }}
@@ -1892,6 +1892,22 @@ def page_feedback() -> None:
 
 def main() -> None:
     st.html(GLASS_CSS)
+    st.html(
+        """
+        <script>
+        if (!window.__dshFeedbackNav) {
+          window.__dshFeedbackNav = true;
+          window.addEventListener('message', function (event) {
+            const data = event.data || {};
+            if (data.type === 'dsh-feedback-submit' && data.url) {
+              window.location.href = data.url;
+            }
+          });
+        }
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
 
     st.sidebar.markdown("### 数据")
     uploaded = st.sidebar.file_uploader(
