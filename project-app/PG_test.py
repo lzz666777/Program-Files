@@ -872,9 +872,36 @@ def echarts_pie_html(elec: float, service: float, parking: float) -> str:
 def make_map(data: pd.DataFrame) -> str:
     coords = [wgs84_to_gcj02(float(lng), float(lat)) for lng, lat in zip(data["lng"], data["lat"])]
     public_cfg = supabase_public_config()
+    try:
+        all_feedback = load_all_feedback()
+    except Exception:
+        all_feedback = {}
     stations = []
     for i, row in data.reset_index(drop=True).iterrows():
         lng, lat = coords[i]
+        saved_feedback = all_feedback.get(row["station_name"], [])
+        feedback_items = [
+            {"text": f"{kind}：{content}", "time": created_at}
+            for kind, content, evidence, created_at in saved_feedback
+        ]
+        feedback_items += [
+            {
+                "text": f"价格不符：平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}",
+                "time": "2026-11-18 09:42",
+            },
+            {
+                "text": f"占位：晚高峰排队约 {int(row['queue'])} 分钟",
+                "time": "2026-11-17 18:20",
+            },
+            {
+                "text": "坏桩：现场部分充电枪无法启动",
+                "time": "2026-11-16 12:05",
+            },
+            {
+                "text": "环境/服务：现场无人值守",
+                "time": "2026-11-15 20:31",
+            },
+        ]
         stations.append(
             {
                 "name": row["station_name"],
@@ -895,28 +922,11 @@ def make_map(data: pd.DataFrame) -> str:
                 "field": float(row["field_price"]),
                 "full_cost": float(row["full_cost_60"]),
                 "evidence": row["evidence"],
-                "feedback": int(row["feedback_count"]),
+                "feedback": len(feedback_items),
                 "elec": float(row["price_elec"]),
                 "service": float(row["price_service"]),
                 "parking": float(row["price_parking"]),
-                "feedback_items": [
-                    {
-                        "text": f"价格不符：平台 ¥{row['platform_price']:.2f}，现场 ¥{row['field_price']:.2f}",
-                        "time": "2026-11-18 09:42",
-                    },
-                    {
-                        "text": f"占位：晚高峰排队约 {int(row['queue'])} 分钟",
-                        "time": "2026-11-17 18:20",
-                    },
-                    {
-                        "text": "坏桩：现场部分充电枪无法启动",
-                        "time": "2026-11-16 12:05",
-                    },
-                    {
-                        "text": "环境/服务：现场无人值守",
-                        "time": "2026-11-15 20:31",
-                    },
-                ],
+                "feedback_items": feedback_items,
             }
         )
     center_lat = sum(s["lat"] for s in stations) / len(stations)
@@ -1825,6 +1835,42 @@ def load_feedback(station: str) -> list[list[str]]:
         return [list(row) for row in cur.fetchall()]
     finally:
         conn.close()
+
+
+def load_all_feedback() -> dict[str, list[list[str]]]:
+    cfg = supabase_config()
+    rows: list[tuple] = []
+    if cfg:
+        base, key = cfg
+        query = (
+            f"{base}/rest/v1/feedback"
+            "?select=station,kind,content,evidence,created_at&order=id.desc"
+        )
+        headers = {"apikey": key}
+        if not key.startswith("sb_"):
+            headers["Authorization"] = f"Bearer {key}"
+        req = urllib.request.Request(query, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        rows = [
+            (r["station"], r["kind"], r["content"], r["evidence"], r["created_at"])
+            for r in data
+        ]
+    else:
+        conn = feedback_connection()
+        try:
+            cur = conn.execute(
+                "SELECT station, kind, content, evidence, created_at "
+                "FROM feedback ORDER BY id DESC"
+            )
+            rows = cur.fetchall()
+        finally:
+            conn.close()
+
+    grouped: dict[str, list[list[str]]] = {}
+    for station, kind, content, evidence, created_at in rows:
+        grouped.setdefault(station, []).append([kind, content, evidence, created_at])
+    return grouped
 
 
 def save_feedback(station: str, kind: str, content: str, evidence: str) -> None:
