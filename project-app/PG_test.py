@@ -876,6 +876,10 @@ def make_map(data: pd.DataFrame) -> str:
         all_feedback = load_all_feedback()
     except Exception:
         all_feedback = {}
+    try:
+        all_sandbox = load_all_sandbox_params()
+    except Exception:
+        all_sandbox = {}
     stations = []
     for i, row in data.reset_index(drop=True).iterrows():
         lng, lat = coords[i]
@@ -914,6 +918,7 @@ def make_map(data: pd.DataFrame) -> str:
                 "feedback_backend": "supabase" if supabase_config() else "sqlite",
                 "supabase_url": public_cfg[0] if public_cfg else "",
                 "supabase_publishable": public_cfg[1] if public_cfg else "",
+                "sandbox": all_sandbox.get(row["station_name"], dict(SANDBOX_DEFAULTS)),
                 "queue": float(row["queue"]),
                 "fake_idle": float(row["fake_idle"]),
                 "occupancy": float(row["occupancy"]),
@@ -1235,6 +1240,7 @@ function showSandboxInline(s) {{
   const baseWait = s.queue;
   const baseFake = s.fake_idle;
   const piles = s.piles;
+  const sb = s.sandbox || {{ grace: 30, fee: 0.3, cap: 50, reservation: true }};
 
   c.innerHTML =
     '<div class="bill-head"><h2>治理沙盘</h2><button class="bill-close" data-close>关闭</button></div>' +
@@ -1247,10 +1253,10 @@ function showSandboxInline(s) {{
       '<div class="bill-metric"><span>有效桩数</span><b id="sb-eff">—</b></div>' +
     '</div>' +
     '<div class="bill-card"><span>方案控制台</span><div class="sb-controls">' +
-      '<label>免费宽限 <b id="sb-grace-v">30 分钟</b><input id="sb-grace" type="range" min="0" max="60" step="5" value="30"></label>' +
-      '<label>超时占用费 <b id="sb-fee-v">0.3 元/分钟</b><input id="sb-fee" type="range" min="0.1" max="2" step="0.1" value="0.3"></label>' +
-      '<label>单次封顶 <b id="sb-cap-v">50 元</b><input id="sb-cap" type="range" min="10" max="100" step="10" value="50"></label>' +
-      '<label class="sb-switch"><input id="sb-res" type="checkbox" checked> 启用预约锁位</label>' +
+      '<label>免费宽限 <b id="sb-grace-v">' + sb.grace + ' 分钟</b><input id="sb-grace" type="range" min="0" max="60" step="5" value="' + sb.grace + '"></label>' +
+      '<label>超时占用费 <b id="sb-fee-v">' + sb.fee.toFixed(1) + ' 元/分钟</b><input id="sb-fee" type="range" min="0.1" max="2" step="0.1" value="' + sb.fee + '"></label>' +
+      '<label>单次封顶 <b id="sb-cap-v">' + sb.cap + ' 元</b><input id="sb-cap" type="range" min="10" max="100" step="10" value="' + sb.cap + '"></label>' +
+      '<label class="sb-switch"><input id="sb-res" type="checkbox"' + (sb.reservation ? ' checked' : '') + '> 启用预约锁位</label>' +
     '</div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       '<div class="bill-card"><span>等待时间对比</span><div class="cmp-chart">' +
@@ -1308,25 +1314,38 @@ function showSandboxInline(s) {{
     $('sb-p-rev').textContent = '¥' + revenue.toFixed(0);
   }};
   const storageKey = 'dsh-sandbox:' + s.name;
+  let saveTimer = null;
   const persist = () => {{
-    try {{
-      window.parent.localStorage.setItem(storageKey, JSON.stringify({{
-        grace: $('sb-grace').value,
-        fee: $('sb-fee').value,
-        cap: $('sb-cap').value,
-        reservation: $('sb-res').checked,
-      }}));
-    }} catch (e) {{}}
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => {{
+      const grace = Number($('sb-grace').value);
+      const fee = Number($('sb-fee').value);
+      const cap = Number($('sb-cap').value);
+      const reservation = $('sb-res').checked;
+      try {{
+        window.parent.localStorage.setItem(storageKey, JSON.stringify({{
+          grace: grace, fee: fee, cap: cap, reservation: reservation,
+        }}));
+      }} catch (e) {{}}
+      if (!s.supabase_url || !s.supabase_publishable) return;
+      fetch(s.supabase_url + '/rest/v1/sandbox_params?on_conflict=station', {{
+        method: 'POST',
+        headers: {{
+          apikey: s.supabase_publishable,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal',
+        }},
+        body: JSON.stringify({{
+          station: s.name,
+          grace: grace,
+          fee: fee,
+          cap: cap,
+          reservation: reservation,
+          updated_at: new Date().toISOString(),
+        }}),
+      }}).catch(() => {{}});
+    }}, 350);
   }};
-  try {{
-    const saved = JSON.parse(window.parent.localStorage.getItem(storageKey) || 'null');
-    if (saved) {{
-      if (saved.grace != null) $('sb-grace').value = saved.grace;
-      if (saved.fee != null) $('sb-fee').value = saved.fee;
-      if (saved.cap != null) $('sb-cap').value = saved.cap;
-      $('sb-res').checked = !!saved.reservation;
-    }}
-  }} catch (e) {{}}
   c.querySelectorAll('input').forEach((el) => el.addEventListener('input', () => {{
     recalc();
     persist();
@@ -1699,10 +1718,39 @@ def page_sandbox() -> None:
 
     with st.sidebar:
         st.markdown("### 占位费参数")
-        grace = st.slider("免费宽限（分钟）", 0, 60, 30, 5, key="sandbox_grace", bind="query-params")
-        fee = st.slider("超时占用费（元/分钟）", 0.1, 2.0, 0.3, 0.1, key="sandbox_fee", bind="query-params")
-        cap = st.slider("单次封顶（元）", 10, 100, 50, 10, key="sandbox_cap", bind="query-params")
-        reservation = st.toggle("启用预约锁位", value=True, key="sandbox_reservation", bind="query-params")
+        try:
+            saved_params = load_sandbox_params(station)
+        except Exception:
+            saved_params = dict(SANDBOX_DEFAULTS)
+
+        def persist_sandbox() -> None:
+            try:
+                save_sandbox_params(
+                    station,
+                    int(st.session_state.sandbox_grace),
+                    float(st.session_state.sandbox_fee),
+                    int(st.session_state.sandbox_cap),
+                    bool(st.session_state.sandbox_reservation),
+                )
+            except Exception as exc:
+                st.warning(f"参数保存失败：{exc}")
+
+        grace = st.slider(
+            "免费宽限（分钟）", 0, 60, int(saved_params["grace"]), 5,
+            key="sandbox_grace", on_change=persist_sandbox,
+        )
+        fee = st.slider(
+            "超时占用费（元/分钟）", 0.1, 2.0, float(saved_params["fee"]), 0.1,
+            key="sandbox_fee", on_change=persist_sandbox,
+        )
+        cap = st.slider(
+            "单次封顶（元）", 10, 100, int(saved_params["cap"]), 10,
+            key="sandbox_cap", on_change=persist_sandbox,
+        )
+        reservation = st.toggle(
+            "启用预约锁位", value=bool(saved_params["reservation"]),
+            key="sandbox_reservation", on_change=persist_sandbox,
+        )
 
     base_wait = float(row["queue"])
     base_fake = float(row["fake_idle"])
@@ -1797,6 +1845,18 @@ def feedback_connection() -> sqlite3.Connection:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sandbox_params (
+            station TEXT PRIMARY KEY,
+            grace INTEGER NOT NULL,
+            fee REAL NOT NULL,
+            cap INTEGER NOT NULL,
+            reservation INTEGER NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
     return conn
 
 
@@ -1822,6 +1882,140 @@ def supabase_public_config() -> tuple[str, str] | None:
     except Exception:
         pass
     return None
+
+
+SANDBOX_DEFAULTS = {"grace": 30, "fee": 0.3, "cap": 50, "reservation": True}
+
+
+def _sandbox_from_row(row) -> dict:
+    return {
+        "grace": int(row[0]),
+        "fee": float(row[1]),
+        "cap": int(row[2]),
+        "reservation": bool(row[3]),
+    }
+
+
+def load_sandbox_params(station: str) -> dict:
+    cfg = supabase_config()
+    if cfg:
+        base, key = cfg
+        query = (
+            f"{base}/rest/v1/sandbox_params"
+            f"?station=eq.{urllib.parse.quote(station)}"
+            "&select=grace,fee,cap,reservation"
+        )
+        headers = {"apikey": key}
+        if not key.startswith("sb_"):
+            headers["Authorization"] = f"Bearer {key}"
+        req = urllib.request.Request(query, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        if data:
+            row = data[0]
+            return {
+                "grace": int(row["grace"]),
+                "fee": float(row["fee"]),
+                "cap": int(row["cap"]),
+                "reservation": bool(row["reservation"]),
+            }
+        return dict(SANDBOX_DEFAULTS)
+
+    conn = feedback_connection()
+    try:
+        row = conn.execute(
+            "SELECT grace, fee, cap, reservation FROM sandbox_params WHERE station = ?",
+            (station,),
+        ).fetchone()
+        return _sandbox_from_row(row) if row else dict(SANDBOX_DEFAULTS)
+    finally:
+        conn.close()
+
+
+def load_all_sandbox_params() -> dict[str, dict]:
+    cfg = supabase_config()
+    if cfg:
+        base, key = cfg
+        headers = {"apikey": key}
+        if not key.startswith("sb_"):
+            headers["Authorization"] = f"Bearer {key}"
+        req = urllib.request.Request(
+            f"{base}/rest/v1/sandbox_params?select=station,grace,fee,cap,reservation",
+            headers=headers,
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        return {
+            row["station"]: {
+                "grace": int(row["grace"]),
+                "fee": float(row["fee"]),
+                "cap": int(row["cap"]),
+                "reservation": bool(row["reservation"]),
+            }
+            for row in data
+        }
+
+    conn = feedback_connection()
+    try:
+        rows = conn.execute(
+            "SELECT station, grace, fee, cap, reservation FROM sandbox_params"
+        ).fetchall()
+        return {row[0]: _sandbox_from_row(row[1:]) for row in rows}
+    finally:
+        conn.close()
+
+
+def save_sandbox_params(
+    station: str, grace: int, fee: float, cap: int, reservation: bool
+) -> None:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    cfg = supabase_config()
+    if cfg:
+        base, key = cfg
+        body = json.dumps(
+            {
+                "station": station,
+                "grace": int(grace),
+                "fee": float(fee),
+                "cap": int(cap),
+                "reservation": bool(reservation),
+                "updated_at": now,
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        headers = {"apikey": key}
+        if not key.startswith("sb_"):
+            headers["Authorization"] = f"Bearer {key}"
+        headers["Content-Type"] = "application/json"
+        headers["Prefer"] = "resolution=merge-duplicates,return=minimal"
+        req = urllib.request.Request(
+            f"{base}/rest/v1/sandbox_params?on_conflict=station",
+            data=body,
+            method="POST",
+            headers=headers,
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        return
+
+    conn = feedback_connection()
+    try:
+        conn.execute(
+            """
+            INSERT INTO sandbox_params (station, grace, fee, cap, reservation, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(station) DO UPDATE SET
+                grace = excluded.grace,
+                fee = excluded.fee,
+                cap = excluded.cap,
+                reservation = excluded.reservation,
+                updated_at = excluded.updated_at
+            """,
+            (station, int(grace), float(fee), int(cap), int(bool(reservation)), now),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def load_feedback(station: str) -> list[list[str]]:
