@@ -1315,6 +1315,7 @@ function showSandboxInline(s) {{
   }};
   const storageKey = 'dsh-sandbox:' + s.name;
   let saveTimer = null;
+  let dirty = false;
   const persist = () => {{
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => {{
@@ -1322,6 +1323,7 @@ function showSandboxInline(s) {{
       const fee = Number($('sb-fee').value);
       const cap = Number($('sb-cap').value);
       const reservation = $('sb-res').checked;
+      s.sandbox = {{ grace: grace, fee: fee, cap: cap, reservation: reservation }};
       try {{
         window.parent.localStorage.setItem(storageKey, JSON.stringify({{
           grace: grace, fee: fee, cap: cap, reservation: reservation,
@@ -1347,10 +1349,36 @@ function showSandboxInline(s) {{
     }}, 350);
   }};
   c.querySelectorAll('input').forEach((el) => el.addEventListener('input', () => {{
+    dirty = true;
     recalc();
     persist();
   }}));
   recalc();
+  if (s.supabase_url && s.supabase_publishable) {{
+    const query = '/rest/v1/sandbox_params?station=eq.' +
+      encodeURIComponent(s.name) +
+      '&select=grace,fee,cap,reservation';
+    fetch(s.supabase_url + query, {{
+      headers: {{ apikey: s.supabase_publishable }},
+    }})
+      .then((res) => res.ok ? res.json() : [])
+      .then((rows) => {{
+        if (dirty || !rows || !rows.length) return;
+        const row = rows[0];
+        $('sb-grace').value = row.grace;
+        $('sb-fee').value = row.fee;
+        $('sb-cap').value = row.cap;
+        $('sb-res').checked = !!row.reservation;
+        s.sandbox = {{
+          grace: Number(row.grace),
+          fee: Number(row.fee),
+          cap: Number(row.cap),
+          reservation: !!row.reservation,
+        }};
+        recalc();
+      }})
+      .catch(() => {{}});
+  }}
 }}
 
 function showFeedbackInline(s) {{
