@@ -1307,7 +1307,30 @@ function showSandboxInline(s) {{
     $('sb-p-res').textContent = reservation ? '开启' : '关闭';
     $('sb-p-rev').textContent = '¥' + revenue.toFixed(0);
   }};
-  c.querySelectorAll('input').forEach((el) => el.addEventListener('input', recalc));
+  const storageKey = 'dsh-sandbox:' + s.name;
+  const persist = () => {{
+    try {{
+      window.parent.localStorage.setItem(storageKey, JSON.stringify({{
+        grace: $('sb-grace').value,
+        fee: $('sb-fee').value,
+        cap: $('sb-cap').value,
+        reservation: $('sb-res').checked,
+      }}));
+    }} catch (e) {{}}
+  }};
+  try {{
+    const saved = JSON.parse(window.parent.localStorage.getItem(storageKey) || 'null');
+    if (saved) {{
+      if (saved.grace != null) $('sb-grace').value = saved.grace;
+      if (saved.fee != null) $('sb-fee').value = saved.fee;
+      if (saved.cap != null) $('sb-cap').value = saved.cap;
+      $('sb-res').checked = !!saved.reservation;
+    }}
+  }} catch (e) {{}}
+  c.querySelectorAll('input').forEach((el) => el.addEventListener('input', () => {{
+    recalc();
+    persist();
+  }}));
   recalc();
 }}
 
@@ -1676,10 +1699,10 @@ def page_sandbox() -> None:
 
     with st.sidebar:
         st.markdown("### 占位费参数")
-        grace = st.slider("免费宽限（分钟）", 0, 60, 30, 5)
-        fee = st.slider("超时占用费（元/分钟）", 0.1, 2.0, 0.3, 0.1)
-        cap = st.slider("单次封顶（元）", 10, 100, 50, 10)
-        reservation = st.toggle("启用预约锁位", value=True)
+        grace = st.slider("免费宽限（分钟）", 0, 60, 30, 5, key="sandbox_grace", bind="query-params")
+        fee = st.slider("超时占用费（元/分钟）", 0.1, 2.0, 0.3, 0.1, key="sandbox_fee", bind="query-params")
+        cap = st.slider("单次封顶（元）", 10, 100, 50, 10, key="sandbox_cap", bind="query-params")
+        reservation = st.toggle("启用预约锁位", value=True, key="sandbox_reservation", bind="query-params")
 
     base_wait = float(row["queue"])
     base_fake = float(row["fake_idle"])
